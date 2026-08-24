@@ -1,14 +1,16 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel
+from app.schemas.chat import ChatRequest,ChatResponse
+from app.services.chat_service import ChatService
 
 router = APIRouter()
 
-class ChatRequest(BaseModel):
-    message : str
+def get_chat_service():
+    return ChatService()
 
-@router.post("/chat")
-def chat(request : ChatRequest):
+@router.post("/chat", response_model=ChatResponse)
+def chat(request : ChatRequest, chat_service : ChatService = Depends(get_chat_service) ):
+    response = chat_service.generate_response(request.message)
     return {
-        "message" : request.message,
-        "response" : "Meow"
+        "response" : response
     }

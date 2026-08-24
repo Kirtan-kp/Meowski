@@ -3,3 +3,14 @@ cat_rag_project_specification.docx
 c_r_venv
 requirements.txt
 .env
+app/__init__.py
+app/__pycache__/
+app/api/__init__.py
+app/api/__pycache__/
+app/api/routes/__init__.py
+app/api/routes/__pycache__/
+app/core/__init__.py
+app/core/__pycache__/
+app/schemas/__pycache__/
+app/services/__pycache__/
+tests/__init__.py
