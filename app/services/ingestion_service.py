@@ -3,11 +3,13 @@ from app.ingestion.cleaner import clean
 from app.ingestion.parsers.docx import DOCXParser
 from app.ingestion.parsers.txt import TXTReader
 from app.ingestion.parsers.pdf import PDFReader
+from app.ingestion.chunker import TextChunker
 
 class IngestionService:
 
     def __init__(self):
         self._parsers = {".pdf" : PDFReader() , ".txt" : TXTReader() , ".docx" : DOCXParser()}
+        self.chunker = TextChunker()
 
     def ingest(self , file_path : str , file_size : int) -> str:
 
@@ -16,4 +18,6 @@ class IngestionService:
 
         text = clean(parser.parse(file_path))
 
-        return text
+        chunks = self.chunker.chunk(text)
+
+        return chunks
