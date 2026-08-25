@@ -1,7 +1,7 @@
 from app.ingestion.parsers.base import BaseParser
 from pypdf import PdfReader
 
-class PDFReader:
+class PDFReader(BaseParser):
 
     def parse(self , file_path : str) -> str:
 

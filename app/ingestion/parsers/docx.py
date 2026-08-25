@@ -1,8 +1,9 @@
 from docx import Document
+from app.ingestion.parsers.base import BaseParser
 
-class DOCXParser:
+class DOCXParser(BaseParser):
 
-    def parser(self , file_path : str) -> str:
+    def parse(self , file_path : str) -> str:
         document = Document(file_path)
         paragraphs = []
 

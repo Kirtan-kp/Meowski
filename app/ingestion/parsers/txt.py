@@ -1,4 +1,6 @@
-class TXTReader:
+from app.ingestion.parsers.base import BaseParser
+
+class TXTReader(BaseParser):
 
     def parse(self , file_path : str) -> str:
 
