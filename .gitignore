@@ -15,3 +15,8 @@ app/schemas/__pycache__/
 app/services/__pycache__/
 tests/__init__.py
 app/middleware/__pycache__/
+app/ingestion/__pycache__/
+app/ingestion/parsers/__pycache__/
+/tests/__pycache__
+app/vectorstore/__pycache__
+qdrant_storage/
