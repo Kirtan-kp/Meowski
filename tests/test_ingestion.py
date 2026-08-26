@@ -1,11 +1,12 @@
 from app.services.ingestion_service import IngestionService
 
-service = IngestionService()
+service = IngestionService(r"C:\Users\asus\.vscode\Meowski\sample.txt")
 
-chunks = service.ingest(r"C:\Users\asus\.vscode\Meowski\sample.csv",100)
-
-print(chunks)
+chunks = service.ingest()
 
 for chunk in chunks:
-    print(f"\nChunk {chunk.chunk_index}")
-    print(chunk.text)
+    print("\nCONTENT:")
+    print(chunk.page_content)
+
+    print("\nMETADATA:")
+    print(chunk.metadata)

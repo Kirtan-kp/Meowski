@@ -3,13 +3,13 @@ from abc import ABC,abstractmethod
 class VectorStore(ABC):
 
     @abstractmethod
-    def add_chunks(self , chunks):
+    def add_documents(self , documents):
         pass
 
     @abstractmethod
-    def search(self , query_vector , top_k = 5 , filters = None):
+    def similarity_search(self , query , k = 5 , **kwargs):
         pass
 
     @abstractmethod
-    def delete_document(self , document_id):
+    def delete(self , **kwargs):  # kwargs is a dict of the keyword args passed to the function
         pass

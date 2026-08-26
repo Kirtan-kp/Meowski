@@ -1,7 +1,7 @@
 from app.core.config import settings
 from app.llm.base import BaseLLM
 
-def GroqLLM(BaseLLM):
+class GroqLLM(BaseLLM):
 
     def __init__(self):
         self.api_key = settings.llm_api_key

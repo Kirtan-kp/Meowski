@@ -1,17 +1,22 @@
-from uuid import uuid4
+from langchain_qdrant import QdrantVectorStore as LangChainQdrantStore
 from qdrant_client import QdrantClient
-from qdrant_client.models import Distance,PointStruct,VectorParams
+from qdrant_client.models import Distance,VectorParams
 from app.core.config import settings
 from app.vectorstore.base import VectorStore
+from app.services.embedding_service import EmbeddingService
 
 class QdrantVectorStore(VectorStore):
 
     def __init__(self , embedding_dimension : int):
+
         self.client = QdrantClient(url = settings.qdrant_url)
         self.collection_name = settings.qdrant_collection
         self._create_collection_if_not_exists(embedding_dimension)
+        self.embedding_service = EmbeddingService()
+        self.vector_store = LangChainQdrantStore(client = self.client , collection_name = self.collection_name , embedding = self.embedding_service.embedding)
 
     def _create_collection_if_not_exists(self , embedding_dimension : int):
+
         collections = self.client.get_collections()
         collection_names = [collection.name for collection in collections.collections]
 
@@ -21,28 +26,14 @@ class QdrantVectorStore(VectorStore):
                 vectors_config = VectorParams(size = embedding_dimension , distance = Distance.COSINE)
             )
 
-    def add_chunks(self, chunks):
-        points = []                
+    def add_documents(self, documents):
 
-        for chunk in chunks:           #transforming chunks into points
-            point = PointStruct(       #qdrant function for point structure
-                id = str(uuid4()),
-                vector = chunk["vector"],
-                payload = {
-                    "text": chunk["text"],
-                    "user_id": chunk["user_id"],
-                    "session_id": chunk["session_id"],
-                    "document_id": chunk["document_id"],
-                    "filename": chunk["filename"],
-                    "chunk_index": chunk["chunk_index"]
-                }
-            )
-            points.append(point)
-        self.client.upsert(collection_name = self.collection_name , points = points)   #qdrant function to send all constructed points in a single batch
+        return self.vector_store.add_documents(documents)                
 
-    def search(self, query_vector , top_k=5, filters=None):
-        results = self.client.query_points(collection_name = self.collection_name , query = query_vector , limit = top_k , query_filter = filters)
-        return results.points
+    def similarity_search(self, query , k=5, **kwargs):
 
-    def delete_document(self, document_id : str):
-        pass
+        return self.vector_store.similarity_search(query = query , k = k , **kwargs)
+
+    def delete(self, **kwargs):
+
+        return self.vector_store.delete(**kwargs)

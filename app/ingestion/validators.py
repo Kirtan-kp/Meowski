@@ -2,9 +2,9 @@ from pathlib import Path
 
 ALLOWED_EXTENSIONS = {".pdf" , ".txt" , ".docx"}  #set
 
-MAX_FILE_SIZE = 10*1024*1024  # 10 mb
+MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 mb
 
-def validate_file(filename : str , file_size : int) -> None:
+def validate_file(filename : str , file_size : int) -> str:
     extension = Path(filename).suffix.lower()
 
     if extension not in ALLOWED_EXTENSIONS:
