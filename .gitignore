@@ -22,3 +22,7 @@ app/vectorstore/__pycache__
 qdrant_storage/
 app/retrieval/__init__.py
 app/retrieval/__pycache__/
+app/llm/__pycache__/
+app/llm/providers/__pycache__/
+sample.txt
+try.py
