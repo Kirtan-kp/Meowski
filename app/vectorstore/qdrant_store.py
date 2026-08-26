@@ -34,6 +34,10 @@ class QdrantVectorStore(VectorStore):
 
         return self.vector_store.similarity_search(query = query , k = k , **kwargs)
 
+    def as_retriever(self, **kwargs):
+        
+        return self.vector_store.as_retriever(**kwargs)
+
     def delete(self, **kwargs):
 
         return self.vector_store.delete(**kwargs)

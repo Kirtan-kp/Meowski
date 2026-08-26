@@ -20,3 +20,5 @@ app/ingestion/parsers/__pycache__/
 /tests/__pycache__
 app/vectorstore/__pycache__
 qdrant_storage/
+app/retrieval/__init__.py
+app/retrieval/__pycache__/
