@@ -28,7 +28,7 @@ retriever = create_retrieval_pipeline(vector_store = vector_store , llm = llm.ll
 
 rag_chain = create_rag_chain(retriever = retriever , llm = llm.llm , prompt = RAG_PROMPT)
 
-question = "What projects did Kirtan work on?"
+question = "What is Kirtan's favorite programming language?"
 
 result = rag_chain.invoke(question)
 
