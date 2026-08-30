@@ -12,5 +12,5 @@ def get_chat_service():
 def chat(request : ChatRequest, chat_service : ChatService = Depends(get_chat_service) ):
     response = chat_service.generate_response(message = request.message , session_id = request.session_id)
     return {
-        "response" : response
+        "response" : response.answer
     }
