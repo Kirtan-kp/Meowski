@@ -10,3 +10,7 @@ class RAGState(TypedDict , total = False):
     context: str
 
     answer: str
+
+    retry_count : int
+
+    rewritten_question : str

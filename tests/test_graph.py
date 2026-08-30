@@ -30,7 +30,7 @@ rag_graph = create_rag_graph(retriever = retriever , llm = llm.llm , prompt = RA
 
 question = "What is Kirtan's favorite programming language?"
 
-result = rag_graph.invoke({"question" : question})
+result = rag_graph.invoke({"question" : question , "retry_count" : 0})
 
 response = build_rag_response(result)
 
