@@ -5,10 +5,20 @@ from langgraph.checkpoint.memory import MemorySaver
 
 def should_retry(state: RAGState) -> str: 
 
+    retry_count = state.get("retry_count", 0)
+    if retry_count >= 1:
+        return "generate"
+    
     documents = state.get("documents" , []) 
 
-    if not documents and state.get("retry_count" , 0) < 1: 
-        return "rewrite" 
+    if not documents: 
+        return "rewrite"
+
+    scores = [float(document["metadata"].get("relevance_score" , 0)) for document in documents]
+    max_score = max(scores , default = 0)
+
+    if max_score < 0.5:
+            return "rewrite"
     
     return "generate"
 

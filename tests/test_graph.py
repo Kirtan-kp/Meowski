@@ -28,21 +28,27 @@ retriever = create_retrieval_pipeline(vector_store = vector_store , llm = llm.ll
 
 rag_graph = create_rag_graph(retriever = retriever , llm = llm.llm , prompt = RAG_PROMPT)
 
-question = "What is Kirtan's favorite programming language?"
+questions = ["What projects has Kirtan worked on?" , "Which one involved computer vision?" , "What is Kirtan's favorite programming language?"]
 
-result = rag_graph.invoke({"question" : question , "retry_count" : 0} , config = {"configurable" : {"thread_id" : "test_session_1"}})
+config = {"configurable" : {"thread_id" : "test_session_1"}}
 
-response = build_rag_response(result)
+for question in questions:
+    result = rag_graph.invoke({"question" : question , "retry_count" : 0} , config = config)
 
-print("\nANSWER:")
-print(response.answer)
+    response = build_rag_response(result)
 
-print("\nSOURCES:")
+    print("\nQUESTION:")
+    print(question)
 
-for source in response.sources:
+    print("\nANSWER:")
+    print(response.answer)
 
-    print("\nCONTENT:")
-    print(source.content)
+    print("\nSOURCES:")
 
-    print("\nMETADATA:")
-    print(source.metadata)
+    for source in response.sources:
+
+        print("\nCONTENT:")
+        print(source.content)
+
+        print("\nMETADATA:")
+        print(source.metadata)

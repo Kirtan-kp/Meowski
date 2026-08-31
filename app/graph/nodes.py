@@ -20,7 +20,10 @@ def make_serializable(value):
 
 def retrieve_node(state : RAGState , retriever) -> dict:
 
-    question = state.get("rewritten_question" , state["question"])
+    if state.get("retry_count", 0) > 0:
+        question = state.get("rewritten_question", state["question"])
+    else:
+        question = state["question"]
 
     documents = retriever.invoke(question)
 
@@ -41,7 +44,10 @@ def generate_node(state : RAGState , prompt , llm) -> dict:
 
     context = "\n\n".join(document["page_content"] for document in state["documents"])
 
-    question = state.get("rewritten_question" , state["question"] )
+    if state.get("retry_count", 0) > 0:
+        question = state.get("rewritten_question", state["question"])
+    else:
+        question = state["question"]
 
     answer = (prompt | llm | StrOutputParser()).invoke(
         {
@@ -56,8 +62,13 @@ def generate_node(state : RAGState , prompt , llm) -> dict:
 
 def rewrite_query_node(state : RAGState , llm) -> dict: 
 
+    chat_history = state.get("chat_history" , [])
+
+    history_text = "\n".join(f"{message.type} : {message.content}" for message in chat_history)
+
     rewrite_prompt = ("Rewrite the following question to make it clearer and " 
-                      "more useful for retrieving relevant documents.\n\n" 
+                      "more useful for retrieving relevant documents.\n\n"
+                      f"Conversation history:\n{history_text}\n\n" 
                       f"Original question: {state['question']}\n\n" 
                       "Return only the rewritten question." )
      
