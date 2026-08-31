@@ -1,23 +1,24 @@
-from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.prompts import ChatPromptTemplate , MessagesPlaceholder
 
-RAG_PROMPT = ChatPromptTemplate.from_template(
-    """
-You are a helpful assistant answering questions using retrieved context.
+RAG_PROMPT = ChatPromptTemplate.from_messages(
+    [
+        (
+            "system",
+            """
+You are a helpful assistant.
 
-Follow these rules:
+Answer the user's question using ONLY the provided context.
 
-1. Answer the question using ONLY the information provided in the context.
-2. Do not use outside knowledge.
-3. Do not invent or assume facts that are not present in the context.
-4. If the context does not contain enough information to answer the question, clearly say that the information is not available in the provided context.
-5. Keep the answer concise and directly answer the question.
+If the answer cannot be found in the context, say:
+"The information is not available in the provided context."
+
+Do not make up information.
+
+Conversation history may be used to understand references in the user's question, but factual answers must still come from the provided context.
 
 Context:
 {context}
-
-Question:
-{question}
-
-Answer:
 """
+        ) , MessagesPlaceholder(variable_name = "chat_history") , ("human" , "{question}")
+    ]
 )

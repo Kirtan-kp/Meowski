@@ -24,6 +24,6 @@ class ChatService:
 
         logger.info("Generating chat response for session %s" , session_id)
 
-        result = self.rag_graph.invoke({"question" : message , "retry_count" : 0})
+        result = self.rag_graph.invoke({"question" : message , "retry_count" : 0} , config = {"configurable" : {"thread_id" : session_id}})
 
         return build_rag_response(result)

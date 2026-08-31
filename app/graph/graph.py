@@ -1,6 +1,7 @@
 from langgraph.graph import StateGraph, START, END
 from app.graph.state import RAGState
 from app.graph.nodes import retrieve_node, generate_node, rewrite_query_node 
+from langgraph.checkpoint.memory import MemorySaver
 
 def should_retry(state: RAGState) -> str: 
 
@@ -23,4 +24,6 @@ def create_rag_graph(retriever , prompt , llm):
     graph.add_edge( "rewrite", "retrieve" )
     graph.add_edge("generate" , END)
 
-    return graph.compile()
+    checkpointer = MemorySaver()
+
+    return graph.compile(checkpointer = checkpointer)
