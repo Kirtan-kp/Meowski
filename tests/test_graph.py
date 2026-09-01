@@ -28,7 +28,7 @@ retriever = create_retrieval_pipeline(vector_store = vector_store , llm = llm.ll
 
 rag_graph = create_rag_graph(retriever = retriever , llm = llm.llm , prompt = RAG_PROMPT)
 
-questions = ["What projects has Kirtan worked on?" , "Which one involved computer vision?" , "What is Kirtan's favorite programming language?"]
+questions = ["What projects has Kirtan worked on?" , "Which one involved computer vision?" , "What was the purpose of that project?"]
 
 config = {"configurable" : {"thread_id" : "test_session_1"}}
 
@@ -39,6 +39,9 @@ for question in questions:
 
     print("\nQUESTION:")
     print(question)
+
+    print("\nREWRITTEN QUESTION:")
+    print(result.get("rewritten_question", "None"))
 
     print("\nANSWER:")
     print(response.answer)

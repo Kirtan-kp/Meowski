@@ -58,7 +58,7 @@ def generate_node(state : RAGState , prompt , llm) -> dict:
     )
 
     return {"context" : context , "answer" : answer , "documents" : state["documents"] , 
-            "chat_history": [HumanMessage(content = question) , AIMessage(content = answer)]}
+            "chat_history": [HumanMessage(content = state["question"]) , AIMessage(content = answer)]}
 
 def rewrite_query_node(state : RAGState , llm) -> dict: 
 
