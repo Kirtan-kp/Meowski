@@ -19,7 +19,7 @@ def create_rag_chain(retriever , llm , prompt):
 
         context = "\n\n".join(document.page_content for document in documents)
 
-        answer = (prompt | llm | StrOutputParser()).invoke({"context" : context , "question" : question})
+        answer = (prompt | llm | StrOutputParser()).invoke({"context" : context , "question" : question , "chat_history" : []})
 
         return {"answer" : answer , "documents" : documents}
 
