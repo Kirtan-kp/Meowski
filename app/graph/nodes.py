@@ -1,6 +1,7 @@
 from app.graph.state import RAGState
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.messages import HumanMessage, AIMessage
+from qdrant_client.models import Filter, FieldCondition, MatchValue
 
 def make_serializable(value):
 
@@ -25,7 +26,20 @@ def retrieve_node(state : RAGState , retriever) -> dict:
     else:
         question = state["question"]
 
-    documents = retriever.invoke(question)
+    access_filter = Filter(
+        must=[
+            FieldCondition(
+                key="metadata.user_id",
+                match=MatchValue(value=state["user_id"])
+            ),
+            FieldCondition(
+                key="metadata.session_id",
+                match=MatchValue(value=state["session_id"])
+            )
+        ]
+    )
+
+    documents = retriever.invoke(question , filter=access_filter)
 
     serializable_documents = [
         {

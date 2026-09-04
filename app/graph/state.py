@@ -17,3 +17,7 @@ class RAGState(TypedDict , total = False):
     rewritten_question : str
 
     chat_history : Annotated[list[BaseMessage] , add_messages]
+
+    user_id: str
+
+    session_id: str
