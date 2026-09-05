@@ -21,6 +21,14 @@ def create_rag_chain(retriever , llm , prompt):
 
         answer = (prompt | llm | StrOutputParser()).invoke({"context" : context , "question" : question , "chat_history" : []})
 
-        return {"answer" : answer , "documents" : documents}
+        serializable_documents = [
+            {
+                "page_content": document.page_content,
+                "metadata": document.metadata
+            }
+            for document in documents
+        ]
+
+        return {"answer" : answer , "documents" : serializable_documents}
 
     return RunnableLambda(run_rag)

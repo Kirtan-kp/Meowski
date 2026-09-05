@@ -33,7 +33,8 @@ questions = ["What projects has Kirtan worked on?" , "Which one involved compute
 config = {"configurable" : {"thread_id" : "test_session_1"}}
 
 for question in questions:
-    result = rag_graph.invoke({"question" : question , "retry_count" : 0} , config = config)
+    result = rag_graph.invoke({"question" : question ,"user_id" : "user_1",
+                               "session_id" : "session_1" , "retry_count" : 0} , config = config)
 
     response = build_rag_response(result)
 

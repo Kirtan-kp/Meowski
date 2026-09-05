@@ -1,6 +1,6 @@
 from app.services.ingestion_service import IngestionService
 
-service = IngestionService(r"C:\Users\asus\.vscode\Meowski\sample.txt")
+service = IngestionService(r"C:\Users\asus\.vscode\Meowski\sample.txt" , user_id = "user_1" , session_id = "session_1")
 
 chunks = service.ingest()
 

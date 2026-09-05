@@ -10,9 +10,9 @@ logger = logging.getLogger(__name__)
 
 class ChatService:
 
-    def __init__(self):
+    def __init__(self , vector_store):
 
-        self.vector_store = QdrantVectorStore(embedding_dimension = 384)
+        self.vector_store = vector_store
         self.llm = GroqLLM()
         self.retriever = create_retrieval_pipeline(vector_store = self.vector_store , llm = self.llm.llm , k = 10 , 
                                       top_n = 3 , search_type = "mmr")

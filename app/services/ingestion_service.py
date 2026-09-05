@@ -6,8 +6,10 @@ import os
 
 class IngestionService:
 
-    def __init__(self , file_path : str):
+    def __init__(self , file_path : str , user_id : str , session_id : str):
         self.file_path = file_path
+        self.user_id = user_id
+        self.session_id = session_id
         self._parsers = {".pdf" : PyPDFLoader , ".txt" : TextLoader , ".docx" : Docx2txtLoader}
         self.splitter = RecursiveCharacterTextSplitter(chunk_size = 500 , chunk_overlap = 50)
         self.file_size = os.path.getsize(file_path)
@@ -26,4 +28,7 @@ class IngestionService:
 
         chunks = self.splitter.split_documents(docs)
 
+        for chunk in chunks:
+            chunk.metadata.update({"user_id" : self.user_id , "session_id" : self.session_id})
+            
         return chunks
