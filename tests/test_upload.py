@@ -5,6 +5,16 @@ from app.api.routes.upload import get_upload_service
 import pytest
 from app.ingestion.validators import validate_file
 
+class FakeDB:
+
+    def add(self , record):
+        self.record = record
+
+    def commit(self):
+        pass
+
+db = FakeDB()
+
 class FakeUploadService:
 
     def __init__(self):
@@ -98,14 +108,18 @@ def test_upload_adds_chunks_to_vector_store(tmp_path):
 
         upload_file = FakeUploadFile(file)
 
-        service = UploadService(vector_store)
+        service = UploadService(vector_store , db)
 
         chunks = service.upload(
             file=upload_file,
             user_id="test_user",
             session_id="test_session"
         )
-
+    assert db.record.id
+    assert db.record.user_id == "test_user"
+    assert db.record.session_id == "test_session"
+    assert db.record.scope == "session"
+    assert db.record.status == "ready"
     assert len(chunks) > 0
     assert vector_store.documents is not None
     assert len(vector_store.documents) > 0
@@ -113,3 +127,7 @@ def test_upload_adds_chunks_to_vector_store(tmp_path):
     for chunk in vector_store.documents:
         assert chunk.metadata["user_id"] == "test_user"
         assert chunk.metadata["session_id"] == "test_session"
+        assert chunk.metadata["scope"] == "session"
+        assert chunk.metadata["file_id"]
+        assert chunk.metadata["created_at"]
+        assert chunk.metadata["expires_at"]

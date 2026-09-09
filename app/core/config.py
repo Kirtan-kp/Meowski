@@ -8,9 +8,12 @@ class Settings(BaseSettings):
     llm_api_key : str = ""
     llm_model : str = "openai/gpt-oss-20b"
 
-    qdrant_url: str = "http://localhost:6333"
-    qdrant_collection: str = "cat_rag"
-    embedding_model: str = "all-MiniLM-L6-v2"
+    qdrant_url : str = "http://localhost:6333"
+    qdrant_collection : str = "cat_rag"
+    embedding_model : str = "all-MiniLM-L6-v2"
+
+    postgres_url : str = "postgresql+psycopg://cat_rag:cat_rag@localhost:5432/cat_rag"
+    redis_url : str = "redis://localhost:6379/0"
 
     model_config = SettingsConfigDict(
         env_file = ".env",

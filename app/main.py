@@ -5,12 +5,15 @@ from app.core.config import settings
 from app.schemas.health import HealthResponse
 from app.core.logging import setup_logging
 from app.middleware.request_logging import request_logging_middleware
+from app.db.databse import init_db
 
 setup_logging()
 
 app = FastAPI(title = "Cat RAG API",
     description = "RAG-based cat assistant backend",
     version = "0.1.0")
+
+init_db()
 
 app.middleware("http")(request_logging_middleware)
 

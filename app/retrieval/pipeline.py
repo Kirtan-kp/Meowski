@@ -16,7 +16,7 @@ class RuntimeFilteredEnsembleRetriever(BaseRetriever):
 
         metadata = document.metadata or {}
 
-        for condition in filter.must:
+        def matches_condition(condition):
             key = condition.key
 
             if key.startswith("metadata."):
@@ -25,9 +25,16 @@ class RuntimeFilteredEnsembleRetriever(BaseRetriever):
             expected_value = condition.match.value
             actual_value = metadata.get(key)
 
-            if actual_value != expected_value:
+            return actual_value == expected_value
+        
+        if filter.must:
+            if not all(matches_condition(condition) for condition in filter.must):
                 return False
 
+        if filter.should:
+            if not any(self._matches_filter(document, condition) for condition in filter.should):
+                return False
+            
         return True
 
     def _get_relevant_documents(self , query , * , run_manager , filter = None):

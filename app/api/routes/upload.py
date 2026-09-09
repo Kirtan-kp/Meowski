@@ -1,11 +1,12 @@
 from fastapi import APIRouter, Depends, File, Form, UploadFile
 from app.api.dependencies import get_vector_store
 from app.services.upload_service import UploadService
+from app.db.databse import get_db
 
 router = APIRouter()
 
-def get_upload_service(vector_store = Depends(get_vector_store)):
-    return UploadService(vector_store)
+def get_upload_service(vector_store = Depends(get_vector_store) , db = Depends(get_db)):
+    return UploadService(vector_store , db)
 
 @router.post("/upload")
 def upload(file : UploadFile = File(...) , user_id : str = Form(...) ,

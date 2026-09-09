@@ -21,37 +21,53 @@ def make_serializable(value):
 
 def retrieve_node(state : RAGState , retriever) -> dict:
 
-    if state.get("retry_count", 0) > 0:
+    if state.get("retry_count" , 0) > 0:
         question = state.get("rewritten_question", state["question"])
     else:
         question = state["question"]
 
     access_filter = Filter(
-        must=[
-            FieldCondition(
-                key="metadata.user_id",
-                match=MatchValue(value=state["user_id"])
+        should=[
+            Filter(
+                must=[
+                    FieldCondition(
+                        key = "metadata.scope",
+                        match = MatchValue(value = "portfolio")
+                    )
+                ]
             ),
-            FieldCondition(
-                key="metadata.session_id",
-                match=MatchValue(value=state["session_id"])
+            Filter(
+                must=[
+                    FieldCondition(
+                        key = "metadata.scope",
+                        match = MatchValue(value = "session")
+                    ),
+                    FieldCondition(
+                        key = "metadata.user_id",
+                        match = MatchValue(value = state["user_id"])
+                    ),
+                    FieldCondition(
+                        key = "metadata.session_id",
+                        match = MatchValue(value = state["session_id"])
+                    )
+                ]
             )
         ]
     )
 
-    documents = retriever.invoke(question , filter=access_filter)
+    documents = retriever.invoke(question , filter = access_filter)
 
     serializable_documents = [
         {
-            "page_content": document.page_content,
-            "metadata": make_serializable(document.metadata)
+            "page_content" : document.page_content,
+            "metadata" : make_serializable(document.metadata)
         }
         for document in documents
     ]
 
     return {
-        "documents": serializable_documents,
-        "retry_count": state.get("retry_count", 0)
+        "documents" : serializable_documents,
+        "retry_count" : state.get("retry_count", 0)
     }
 
 def generate_node(state : RAGState , prompt , llm) -> dict:
