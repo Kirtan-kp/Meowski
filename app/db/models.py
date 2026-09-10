@@ -15,3 +15,13 @@ class FileRecord(Base):
     status : Mapped[str] = mapped_column(String , nullable = False)
     created_at : Mapped[datetime] = mapped_column(DateTime(timezone = True) , nullable = False)
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone = True) , nullable = False)
+
+class SessionRecord(Base):
+     
+    __tablename__ = "sessions"
+
+    id : Mapped[str] = mapped_column(String , primary_key = True)
+    user_id : Mapped[str] = mapped_column(String , nullable = False , index = True)
+    status : Mapped[str] = mapped_column(String , nullable = False)
+    created_at : Mapped[datetime] = mapped_column(DateTime(timezone = True) , nullable = False)
+    expires_at : Mapped[datetime] = mapped_column(DateTime(timezone = True) , nullable = False)
