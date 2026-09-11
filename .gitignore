@@ -28,3 +28,4 @@ sample.txt
 try.py
 app/rag/__pycache__
 app/graph/__pycache__
+app/db/__pycache__/

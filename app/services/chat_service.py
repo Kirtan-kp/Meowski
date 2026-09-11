@@ -5,24 +5,48 @@ from app.llm.providers.groq import GroqLLM
 from app.rag.prompt import RAG_PROMPT
 from app.rag.response import build_rag_response
 from app.graph.graph import create_rag_graph
+from app.services.session_service import SessionService
+from langchain_core.messages import HumanMessage, AIMessage
 
 logger = logging.getLogger(__name__)
 
 class ChatService:
 
-    def __init__(self , vector_store):
+    def __init__(self , vector_store , session_service : SessionService):
 
         self.vector_store = vector_store
         self.llm = GroqLLM()
         self.retriever = create_retrieval_pipeline(vector_store = self.vector_store , llm = self.llm.llm , k = 10 , 
                                       top_n = 3 , search_type = "mmr")
         self.rag_graph = create_rag_graph(retriever = self.retriever , llm = self.llm.llm , prompt = RAG_PROMPT)
+        self.session_service = session_service
 
     def generate_response(self , message : str , session_id : str , user_id : str) -> str:
 
         logger.info("Generating chat response for session %s for user %s" , session_id , user_id)
 
-        result = self.rag_graph.invoke({"question" : message ,"user_id" : user_id , "session_id" : session_id , "retry_count" : 0} , 
+        state = self.session_service.get_state(session_id = session_id , user_id = user_id)
+        chat_history = []
+
+        if state and state.get("chat_history"):
+            for item in state["chat_history"]:
+                if item["role"] == "user":
+                    chat_history.append(HumanMessage(content = item["content"]))
+                elif item["role"] == "assistant":
+                    chat_history.append(AIMessage(content = item["content"]))
+
+        result = self.rag_graph.invoke({"question" : message ,"user_id" : user_id , "session_id" : session_id , "retry_count" : 0 , "chat_history": chat_history} , 
                                        config = {"configurable" : {"thread_id" : f"{user_id}:{session_id}"}})
+        
+        updated_history = result.get("chat_history", [])
+        clean_history = []
+        for item in updated_history:
+            if isinstance(item , HumanMessage):
+                clean_history.append({"role" : "user" , "content" : item.content})
+            elif isinstance(item, AIMessage):
+                clean_history.append({"role" : "assistant" , "content" : item.content})
+
+        self.session_service.save_state(session_id = session_id , user_id = user_id , 
+                                        state = {"chat_history" : clean_history})
 
         return build_rag_response(result)

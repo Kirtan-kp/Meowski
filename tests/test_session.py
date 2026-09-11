@@ -1,7 +1,4 @@
-from datetime import datetime, timezone
-
 import pytest
-
 from app.services.session_service import SessionService
 
 
@@ -151,3 +148,46 @@ def test_delete_session():
 
     assert session.status == "deleted"
     assert state_service.get_state(session.id) is None
+
+def test_session_state_persists_across_service_instances():
+    db = FakeDB()
+    state_service = FakeStateService()
+
+    service_one = SessionService(
+        db=db,
+        state_service=state_service
+    )
+
+    session = service_one.create_session("user_1")
+
+    state = {
+        "chat_history": [
+            {
+                "role": "user",
+                "content": "My name is Kirtan"
+            },
+            {
+                "role": "assistant",
+                "content": "Nice to meet you!"
+            }
+        ]
+    }
+
+    service_one.save_state(
+        session_id=session.id,
+        user_id="user_1",
+        state=state
+    )
+
+    # Simulate a new request creating a new service instance.
+    service_two = SessionService(
+        db=db,
+        state_service=state_service
+    )
+
+    recovered_state = service_two.get_state(
+        session_id=session.id,
+        user_id="user_1"
+    )
+
+    assert recovered_state == state
