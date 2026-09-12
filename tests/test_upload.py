@@ -36,11 +36,16 @@ fake_upload_service = FakeUploadService()
 def override_upload_service():
     return fake_upload_service
 
-app.dependency_overrides[get_upload_service] = override_upload_service
+@pytest.fixture
+def upload_service_override():
+
+    app.dependency_overrides[get_upload_service] = override_upload_service
+    yield
+    app.dependency_overrides.pop(get_upload_service , None)
 
 client = TestClient(app)
 
-def test_upload_txt_file():
+def test_upload_txt_file(upload_service_override):
     response = client.post(
         "/upload",
         files={

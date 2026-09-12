@@ -9,6 +9,8 @@ You are a helpful assistant.
 
 Answer the user's question using ONLY the provided context.
 
+Each context block is identified by a source marker such as [Source 1], [Source 2], etc.
+
 If the answer cannot be found in the context, say:
 "The information is not available in the provided context."
 

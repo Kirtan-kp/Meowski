@@ -5,7 +5,12 @@ import pytest
 
 @pytest.fixture
 def vector_store():
-    return QdrantVectorStore(embedding_dimension = 384)
+    
+    vector_store = QdrantVectorStore(embedding_dimension = 384)
+    vector_store.client.delete_collection(collection_name = vector_store.collection_name)
+    vector_store._create_collection_if_not_exists(embedding_dimension = 384)
+
+    return vector_store
 
 def create_access_filter(user_id , session_id):
     return Filter(

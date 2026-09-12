@@ -2,6 +2,7 @@ from app.graph.state import RAGState
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.messages import HumanMessage, AIMessage
 from qdrant_client.models import Filter, FieldCondition, MatchValue
+from app.rag.context import build_context
 
 def make_serializable(value):
 
@@ -72,7 +73,7 @@ def retrieve_node(state : RAGState , retriever) -> dict:
 
 def generate_node(state : RAGState , prompt , llm) -> dict:
 
-    context = "\n\n".join(document["page_content"] for document in state["documents"])
+    context = build_context(state["documents"])
 
     if state.get("retry_count", 0) > 0:
         question = state.get("rewritten_question", state["question"])

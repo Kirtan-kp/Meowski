@@ -7,6 +7,7 @@ from app.rag.response import build_rag_response
 from app.graph.graph import create_rag_graph
 from app.services.session_service import SessionService
 from langchain_core.messages import HumanMessage, AIMessage
+from app.schemas.retrieval import RetrievalResponse
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +22,7 @@ class ChatService:
         self.rag_graph = create_rag_graph(retriever = self.retriever , llm = self.llm.llm , prompt = RAG_PROMPT)
         self.session_service = session_service
 
-    def generate_response(self , message : str , session_id : str , user_id : str) -> str:
+    def generate_response(self , message : str , session_id : str , user_id : str) -> RetrievalResponse:
 
         logger.info("Generating chat response for session %s for user %s" , session_id , user_id)
 
