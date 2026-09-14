@@ -5,12 +5,11 @@ from langchain_core.retrievers import BaseRetriever
 class SessionAwareBM25Retriever(BaseRetriever):
 
     vector_store: object
-    k: int = 10
+    k : int = 10
 
-    def _get_relevant_documents(self, query, *, run_manager, filter=None):
+    def _get_relevant_documents(self , query , * , run_manager , filter = None):
 
         documents = []
-
         offset = None
 
         while True:
@@ -22,7 +21,8 @@ class SessionAwareBM25Retriever(BaseRetriever):
             for point in points:
                 payload = point.payload or {}
                 page_content = payload.get("page_content", "")
-                metadata = payload.get("metadata", {})
+                metadata = payload.get("metadata", {}).copy()
+                metadata["_id"] = str(point.id)
 
                 if page_content:
                     documents.append(Document(page_content = page_content , metadata = metadata))

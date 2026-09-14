@@ -1,0 +1,15 @@
+.git
+.github
+.env
+c_r_venv
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache
+qdrant_storage
+tests
+learn.txt
+cat_rag_project_specification.docx
+sample.txt
+try.py

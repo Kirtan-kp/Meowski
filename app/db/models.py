@@ -11,6 +11,7 @@ class FileRecord(Base):
     user_id : Mapped[str] = mapped_column(String , nullable = False , index = True)
     session_id : Mapped[str] = mapped_column(String , nullable = False , index = True)
     filename : Mapped[str] = mapped_column(String , nullable = False)
+    file_hash : Mapped[str] = mapped_column(String , nullable = False , index = True)
     scope : Mapped[str] = mapped_column(String , nullable = False)
     status : Mapped[str] = mapped_column(String , nullable = False)
     created_at : Mapped[datetime] = mapped_column(DateTime(timezone = True) , nullable = False)

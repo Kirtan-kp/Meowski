@@ -14,10 +14,17 @@ class Settings(BaseSettings):
 
     postgres_url : str = "postgresql+psycopg://cat_rag:cat_rag@localhost:5432/cat_rag"
     redis_url : str = "redis://localhost:6379/0"
+    redis_cache_url : str = "redis://localhost:6379/0"
+    redis_session_url : str = "redis://localhost:6379/1"
 
-    model_config = SettingsConfigDict(
-        env_file = ".env",
-        extra = "ignore"
-    )
+    retrieval_cache_version : int = 1
+
+    rate_limit_requests: int = 60
+    rate_limit_window_seconds: int = 60
+
+    upload_rate_limit_requests: int = 10
+    upload_rate_limit_window_seconds: int = 60
+
+    model_config = SettingsConfigDict(env_file = ".env" , extra = "ignore")
 
 settings = Settings()

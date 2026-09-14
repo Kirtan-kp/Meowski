@@ -10,9 +10,9 @@ from app.core.config import settings
 
 class RuntimeFilteredEnsembleRetriever(BaseRetriever):
 
-    vector_retriever: object
-    bm25_retriever: object
-    weights: list[float]
+    vector_retriever : object
+    bm25_retriever : object
+    weights : list[float]
 
     def _matches_filter(self , document , filter):
         if filter is None:
@@ -53,7 +53,7 @@ class RuntimeFilteredEnsembleRetriever(BaseRetriever):
             if not self._matches_filter(document , filter):
                 continue
 
-            key = (document.page_content , str(document.metadata))
+            key = document.metadata.get("_id") or (document.page_content , str(document.metadata))
             ranked_documents.setdefault(key , [document, 0])
             ranked_documents[key][1] += (self.weights[0] / (60 + rank + 1))
 
@@ -61,71 +61,41 @@ class RuntimeFilteredEnsembleRetriever(BaseRetriever):
             if not self._matches_filter(document , filter):
                 continue
 
-            key = (document.page_content, str(document.metadata))
+            key = document.metadata.get("_id") or (document.page_content , str(document.metadata))
             ranked_documents.setdefault(key, [document, 0])
             ranked_documents[key][1] += (self.weights[1] / (60 + rank + 1))
 
         results = sorted(ranked_documents.values() , key = lambda item : item[1] , reverse = True)
 
-        return [document for document , score in results if self._matches_filter(document, filter)]
+        return [document for document , score in results if self._matches_filter(document , filter)]
 
 class CachedRetriever(BaseRetriever):
 
-    retriever: object
-    cache: object
-    ttl_seconds: int = 3600
+    retriever : object
+    cache : object
+    ttl_seconds : int = 3600
 
-    def _cache_key(self, query, filter):
+    def _cache_key(self , query , filter):
         filter_data = {}
 
         if filter is not None:
-            filter_data = filter.model_dump(
-                exclude_none=True
-            )
+            filter_data = filter.model_dump(exclude_none = True)
 
-        raw_key = json.dumps(
-            {
-                "query": query,
-                "filter": filter_data
-            },
-            sort_keys=True,
-            default=str
-        )
+        raw_key = json.dumps({"query" : query , "filter" : filter_data} , sort_keys = True , default = str)
+        query_hash = hashlib.sha256(raw_key.encode("utf-8")).hexdigest()
 
-        query_hash = hashlib.sha256(
-            raw_key.encode("utf-8")
-        ).hexdigest()
+        return (f"cache:retrieval:" f"{settings.qdrant_collection}:" f"v{settings.retrieval_cache_version}:" f"{query_hash}")
 
-        return (
-            f"cache:retrieval:"
-            f"{settings.qdrant_collection}:"
-            f"{query_hash}"
-        )
+    def _get_relevant_documents(self , query , * , run_manager , filter = None):
 
-    def _get_relevant_documents(
-        self,
-        query,
-        *,
-        run_manager,
-        filter=None
-    ):
-        key = self._cache_key(query, filter)
-
+        key = self._cache_key(query , filter)
         cached_documents = self.cache.get(key)
 
         if cached_documents is not None:
             return cached_documents
 
-        documents = self.retriever.invoke(
-            query,
-            filter=filter
-        )
-
-        self.cache.set(
-            key,
-            documents,
-            self.ttl_seconds
-        )
+        documents = self.retriever.invoke(query , filter = filter)
+        self.cache.set(key , documents , self.ttl_seconds)
 
         return documents
 
@@ -144,4 +114,3 @@ def create_retrieval_pipeline(vector_store , llm , k: int = 10 , top_n: int = 3 
     retrieval_cache = RetrievalCacheService()
 
     return CachedRetriever(retriever = reranker , cache = retrieval_cache , ttl_seconds = 3600)
-

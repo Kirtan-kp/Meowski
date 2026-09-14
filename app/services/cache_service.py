@@ -4,9 +4,9 @@ from app.core.config import settings
 
 class CacheService:
 
-    def __init__(self):
+    def __init__(self , redis_url=None):
 
-        self.redis = redis.Redis.from_url(settings.redis_url , decode_responses = True)
+        self.redis = redis.Redis.from_url(redis_url or settings.redis_cache_url , decode_responses = True)
 
     def _json_default(self, value):
         if hasattr(value, "item"):

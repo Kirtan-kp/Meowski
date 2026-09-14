@@ -4,6 +4,8 @@ from qdrant_client.models import Distance,VectorParams
 from app.core.config import settings
 from app.vectorstore.base import VectorStore
 from app.services.embedding_service import EmbeddingService
+from langchain_core.documents import Document
+from qdrant_client.models import Distance,VectorParams,Filter,FieldCondition,MatchValue
 
 class QdrantVectorStore(VectorStore):
 
@@ -28,16 +30,69 @@ class QdrantVectorStore(VectorStore):
 
     def add_documents(self, documents):
 
-        return self.vector_store.add_documents(documents)                
+        return self.vector_store.add_documents(documents)   
 
-    def similarity_search(self, query , k=5, **kwargs):
+    def get_documents(self , file_id : str):
+
+        scroll_filter = Filter(
+            must=[
+                FieldCondition(
+                    key = "metadata.file_id",
+                    match = MatchValue(value = file_id)
+                )
+            ]
+        )
+
+        documents = []
+        offset = None
+
+        while True:
+
+            points , offset = self.client.scroll(collection_name = self.collection_name , scroll_filter = scroll_filter,
+                                                 limit = 100 , offset = offset , with_payload = True , with_vectors = False)
+
+            for point in points:
+
+                payload = point.payload or {}
+                page_content = payload.get("page_content" , "")
+                metadata = payload.get("metadata" , {})
+
+                if page_content:
+                    documents.append(Document(page_content = page_content , metadata = metadata))
+
+            if offset is None:
+                break
+
+        return documents             
+
+    def has_file(self , file_hash : str , scope : str = "portfolio"):
+
+        scroll_filter = Filter(
+            must=[
+                FieldCondition(
+                    key="metadata.file_hash",
+                    match=MatchValue(value=file_hash)
+                ),
+                FieldCondition(
+                    key="metadata.scope",
+                    match=MatchValue(value=scope)
+                )
+            ]
+        )
+
+        points , _ = self.client.scroll(collection_name = self.collection_name , scroll_filter = scroll_filter,
+            limit = 1 , with_payload = False , with_vectors = False)
+
+        return len(points) > 0
+
+    def similarity_search(self , query , k = 5 , **kwargs):
 
         return self.vector_store.similarity_search(query = query , k = k , **kwargs)
 
-    def as_retriever(self, **kwargs):
+    def as_retriever(self , **kwargs):
         
         return self.vector_store.as_retriever(**kwargs)
 
-    def delete(self, **kwargs):
+    def delete(self , **kwargs):
 
         return self.vector_store.delete(**kwargs)

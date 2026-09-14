@@ -1,7 +1,6 @@
 learn.txt
 cat_rag_project_specification.docx
 c_r_venv
-requirements.txt
 .env
 app/__init__.py
 app/__pycache__/

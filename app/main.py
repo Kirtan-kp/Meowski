@@ -5,6 +5,7 @@ from app.core.config import settings
 from app.schemas.health import HealthResponse
 from app.core.logging import setup_logging
 from app.middleware.request_logging import request_logging_middleware
+from app.middleware.rate_limit import rate_limit_middleware
 from app.db.databse import init_db
 from app.api.routes.session import router as session_router
 from app.db import models
@@ -18,6 +19,7 @@ app = FastAPI(title = "Cat RAG API",
 init_db()
 
 app.middleware("http")(request_logging_middleware)
+app.middleware("http")(rate_limit_middleware)
 
 app.include_router(chat_router)
 app.include_router(upload_router)

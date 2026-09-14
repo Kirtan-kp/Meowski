@@ -5,6 +5,11 @@ from app.api.routes.upload import get_upload_service
 import pytest
 from app.ingestion.validators import validate_file
 
+class FakeSessionService:
+
+    def get_session(self, session_id, user_id):
+        return True
+
 class FakeDB:
 
     def add(self , record):
@@ -13,6 +18,18 @@ class FakeDB:
     def commit(self):
         pass
 
+    def commit(self):
+        pass
+
+    def execute(self , statement):
+
+        class FakeResult:
+
+            def scalar_one_or_none(self):
+                return None
+
+        return FakeResult()
+
 db = FakeDB()
 
 class FakeUploadService:
@@ -20,14 +37,9 @@ class FakeUploadService:
     def __init__(self):
         self.uploaded_chunks = []
 
-    def upload(self, file, user_id, session_id):
-        self.uploaded_chunks.append(
-            {
-                "filename": file.filename,
-                "user_id": user_id,
-                "session_id": session_id
-            }
-        )
+    def upload(self , file , user_id , session_id):
+
+        self.uploaded_chunks.append({"filename" : file.filename , "user_id" : user_id , "session_id" : session_id})
 
         return [object()]
 
@@ -113,7 +125,7 @@ def test_upload_adds_chunks_to_vector_store(tmp_path):
 
         upload_file = FakeUploadFile(file)
 
-        service = UploadService(vector_store , db)
+        service = UploadService(vector_store , db , FakeSessionService())
 
         chunks = service.upload(
             file=upload_file,
