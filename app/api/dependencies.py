@@ -5,10 +5,8 @@ from fastapi import Depends
 
 from app.db.databse import get_db
 
-vector_store = QdrantVectorStore(embedding_dimension = 384)
-
 def get_vector_store():
-    return vector_store
+    return QdrantVectorStore(embedding_dimension = 384)
 
 session_state_service = SessionStateService()
 

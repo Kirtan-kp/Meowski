@@ -24,7 +24,7 @@ class UploadService:
         file_bytes = file.file.read(MAX_FILE_SIZE + 1)
 
         if len(file_bytes) > MAX_FILE_SIZE:
-            raise ValueError("File size exceeds the 10 mb limit.")
+            raise ValueError("File size exceeds the 10 MB limit.")
         
         suffix = validate_file(file.filename , len(file_bytes))        
         file_hash = hashlib.sha256(file_bytes).hexdigest()

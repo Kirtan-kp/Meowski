@@ -4,6 +4,8 @@ services:
     build: .
     ports:
       - "8000:8000"
+    volumes:
+      - huggingface_cache:/root/.cache/huggingface
     environment:
       QDRANT_URL: http://qdrant:6333
       POSTGRES_URL: postgresql+psycopg://cat_rag:cat_rag@postgres:5432/cat_rag
@@ -56,3 +58,4 @@ volumes:
   qdrant_data:
   postgres_data:
   redis_data:
+  huggingface_cache:
