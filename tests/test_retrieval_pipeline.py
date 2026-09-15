@@ -3,7 +3,7 @@ from app.vectorstore.qdrant_store import QdrantVectorStore
 from app.retrieval.pipeline import create_retrieval_pipeline,RuntimeFilteredEnsembleRetriever
 from app.retrieval.multi_query_retriever import RuntimeFilteredMultiQueryRetriever
 from langchain_core.documents import Document
-from app.llm.providers.groq import GroqLLM
+from langchain_core.language_models import FakeListLLM
 import pytest
 
 @pytest.fixture
@@ -12,7 +12,7 @@ def vector_store():
 
 @pytest.fixture
 def llm():
-    return GroqLLM()
+    return FakeListLLM(responses = ["project experience\nprojects using qdrant"])
 
 def create_user_filter(user_id , session_id):
     return Filter(       
@@ -32,7 +32,7 @@ def create_user_filter(user_id , session_id):
 def test_retrieval_pipeline_returns_filtered_documents(vector_store , llm):
 
     user_filter = create_user_filter(user_id = "user_1" , session_id = "session_1")
-    retrieval_pipeline = create_retrieval_pipeline(vector_store = vector_store , llm = llm.llm , k = 10 ,
+    retrieval_pipeline = create_retrieval_pipeline(vector_store = vector_store , llm = llm , k = 10 ,
                                                    top_n = 3 , search_type = "mmr")
 
     documents = retrieval_pipeline.invoke("What projects did Kirtan work on?" , filter = user_filter)
@@ -45,7 +45,7 @@ def test_retrieval_pipeline_returns_filtered_documents(vector_store , llm):
 def test_retrieval_pipeline_blocks_cross_session_documents(vector_store, llm):
 
     user_filter = create_user_filter(user_id = "user_1" , session_id = "session_2")
-    retrieval_pipeline = create_retrieval_pipeline(vector_store = vector_store , llm = llm.llm , 
+    retrieval_pipeline = create_retrieval_pipeline(vector_store = vector_store , llm = llm , 
                                                    k = 10 , top_n = 3 , search_type = "mmr")
     documents = retrieval_pipeline.invoke("What projects did Kirtan work on?" , filter = user_filter)
 
@@ -57,7 +57,7 @@ def test_retrieval_pipeline_blocks_cross_session_documents(vector_store, llm):
 def test_retrieval_pipeline_blocks_cross_user_documents(vector_store, llm):
 
     user_filter = create_user_filter(user_id = "user_2" , session_id = "session_2")
-    retrieval_pipeline = create_retrieval_pipeline(vector_store = vector_store , llm = llm.llm , k = 10 , 
+    retrieval_pipeline = create_retrieval_pipeline(vector_store = vector_store , llm = llm , k = 10 , 
                                                    top_n = 3 , search_type = "mmr")
     documents = retrieval_pipeline.invoke("What projects did Kirtan work on?" , filter = user_filter)
 
@@ -260,7 +260,7 @@ def test_portfolio_documents_are_accessible_but_other_session_documents_are_bloc
 
     retrieval_pipeline = create_retrieval_pipeline(
         vector_store=vector_store,
-        llm=llm.llm,
+        llm=llm,
         k=10,
         top_n=5,
         search_type="mmr"
