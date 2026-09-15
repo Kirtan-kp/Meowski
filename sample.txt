@@ -1,0 +1,11 @@
+Kirtan is an AI/ML enthusiast.
+
+                He has worked with Python, machine learning,
+            deep learning, computer vision and NLP.
+
+
+
+
+
+His projects include an anime face generation
+project and a vehicle insurance prediction system.

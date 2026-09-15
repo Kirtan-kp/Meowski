@@ -1,6 +1,8 @@
 from app.services.ingestion_service import IngestionService
+from pathlib import Path
 
-service = IngestionService(r"C:\Users\asus\.vscode\Meowski\sample.txt" , user_id = "user_1" , session_id = "session_1" , 
+sample_file = Path(__file__).resolve().parent.parent / "sample.txt"
+service = IngestionService(str(sample_file) , user_id = "user_1" , session_id = "session_1" , 
                            file_id = "test-file-1" , file_hash = "test_hash")
 
 chunks = service.ingest()
