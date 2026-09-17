@@ -9,12 +9,33 @@ from app.middleware.rate_limit import rate_limit_middleware
 from app.db.databse import init_db
 from app.api.routes.session import router as session_router
 from app.db import models
+import asyncio
+from contextlib import asynccontextmanager
+from app.services.cleanup_worker import cleanup_worker
 
 setup_logging()
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    cleanup_task = asyncio.create_task(
+        cleanup_worker()
+    )
+
+    try:
+        yield
+
+    finally:
+        cleanup_task.cancel()
+
+        try:
+            await cleanup_task
+        except asyncio.CancelledError:
+            pass
+
 app = FastAPI(title = "Cat RAG API",
     description = "RAG-based cat assistant backend",
-    version = "0.1.0")
+    version = "0.1.0",
+    lifespan = lifespan)
 
 init_db()
 

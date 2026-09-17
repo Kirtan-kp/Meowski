@@ -3,6 +3,7 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_core.messages import HumanMessage, AIMessage
 from qdrant_client.models import Filter, FieldCondition, MatchValue
 from app.rag.context import build_context
+from app.services.llm_cache_service import LLMCacheService
 
 def make_serializable(value):
 
@@ -80,14 +81,40 @@ def generate_node(state : RAGState , prompt , llm) -> dict:
     else:
         question = state["question"]
 
-    answer = (prompt | llm | StrOutputParser()).invoke(
-        {
-            "context" : context,
-            "question" : question,
-            "chat_history" : state.get("chat_history" , [])
-        }
+    chat_history = state.get("chat_history", [])
+
+    cache = LLMCacheService()
+
+    cached_answer = cache.get(
+        question=question,
+        context=context,
+        chat_history=chat_history,
+        user_id=state["user_id"],
+        session_id=state["session_id"],
     )
 
+    if cached_answer is not None:
+        answer = cached_answer
+
+    else:
+
+        answer = (prompt | llm | StrOutputParser()).invoke(
+            {
+                "context" : context,
+                "question" : question,
+                "chat_history" : chat_history
+            }
+        )
+
+        cache.set(
+            question=question,
+            context=context,
+            chat_history=chat_history,
+            user_id=state["user_id"],
+            session_id=state["session_id"],
+            answer=answer,
+        )
+        
     return {"context" : context , "answer" : answer , "documents" : state["documents"] , 
             "chat_history": [HumanMessage(content = state["question"]) , AIMessage(content = answer)]}
 

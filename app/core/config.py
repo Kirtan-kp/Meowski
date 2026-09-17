@@ -18,12 +18,16 @@ class Settings(BaseSettings):
     redis_session_url : str = "redis://localhost:6379/1"
 
     retrieval_cache_version : int = 1
+    llm_cache_ttl_seconds: int = 86400
+    llm_cache_version: int = 1
 
     rate_limit_requests: int = 60
     rate_limit_window_seconds: int = 60
 
     upload_rate_limit_requests: int = 10
     upload_rate_limit_window_seconds: int = 60
+
+    cleanup_interval_seconds: int = 3600
 
     model_config = SettingsConfigDict(env_file = ".env" , extra = "ignore")
 

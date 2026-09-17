@@ -1,5 +1,11 @@
-from app.evaluation.retrieval_metrics import calculate_recall,calculate_precision,calculate_mrr
 from langchain_core.documents import Document
+
+from scripts.run_retrieval_evaluation import (
+    calculate_recall,
+    calculate_precision,
+    calculate_mrr,
+)
+
 
 def make_documents(indices):
     return [

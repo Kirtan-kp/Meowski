@@ -1,6 +1,6 @@
 import pytest
 from app.services.session_service import SessionService
-
+from datetime import datetime , timezone , timedelta
 
 class FakeDB:
     def __init__(self):
@@ -44,15 +44,18 @@ class FakeQuery:
 class FakeStateService:
     def __init__(self):
         self.states = {}
+        self.ttls = {}
 
     def save_state(self, session_id, state, ttl_seconds):
         self.states[session_id] = state
+        self.ttls[session_id] = ttl_seconds
 
     def get_state(self, session_id):
         return self.states.get(session_id)
 
     def delete_state(self, session_id):
         self.states.pop(session_id, None)
+        self.ttls.pop(session_id, None)
 
 
 def test_create_session():
@@ -191,3 +194,65 @@ def test_session_state_persists_across_service_instances():
     )
 
     assert recovered_state == state
+
+def test_session_state_gets_24_hour_ttl():
+    db = FakeDB()
+    state_service = FakeStateService()
+
+    service = SessionService(
+        db=db,
+        state_service=state_service
+    )
+
+    session = service.create_session("user_1")
+
+    assert state_service.ttls[session.id] == 24 * 60 * 60
+
+def test_expired_session_is_rejected_and_state_deleted():
+    db = FakeDB()
+    state_service = FakeStateService()
+
+    service = SessionService(
+        db=db,
+        state_service=state_service
+    )
+
+    session = service.create_session("user_1")
+
+    state_service.save_state(
+        session_id=session.id,
+        state={"chat_history": []},
+        ttl_seconds=100
+    )
+
+    session.expires_at = datetime.now(timezone.utc) - timedelta(seconds=1)
+
+    with pytest.raises(ValueError, match="Session has expired"):
+        service.get_session(
+            session_id=session.id,
+            user_id="user_1"
+        )
+
+    assert session.status == "expired"
+    assert state_service.get_state(session.id) is None
+
+def test_saving_state_uses_remaining_session_ttl():
+    db = FakeDB()
+    state_service = FakeStateService()
+
+    service = SessionService(
+        db=db,
+        state_service=state_service
+    )
+
+    session = service.create_session("user_1")
+
+    session.expires_at = datetime.now(timezone.utc) + timedelta(seconds=300)
+
+    service.save_state(
+        session_id=session.id,
+        user_id="user_1",
+        state={"chat_history": []}
+    )
+
+    assert 1 <= state_service.ttls[session.id] <= 300

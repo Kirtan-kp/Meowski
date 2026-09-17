@@ -6,6 +6,7 @@ from app.vectorstore.base import VectorStore
 from app.services.embedding_service import EmbeddingService
 from langchain_core.documents import Document
 from qdrant_client.models import Distance,VectorParams,Filter,FieldCondition,MatchValue
+from qdrant_client import models
 
 class QdrantVectorStore(VectorStore):
 
@@ -96,3 +97,18 @@ class QdrantVectorStore(VectorStore):
     def delete(self , **kwargs):
 
         return self.vector_store.delete(**kwargs)
+
+    def delete_by_file_id(self, file_id: str):
+        self.client.delete(
+            collection_name=self.collection_name,
+            points_selector=models.FilterSelector(
+                filter=models.Filter(
+                    must=[
+                        models.FieldCondition(
+                            key="metadata.file_id",
+                            match=models.MatchValue(value=file_id),
+                        )
+                    ]
+                )
+            ),
+        )
