@@ -7,10 +7,14 @@ class GroqLLM(BaseLLM):
     def __init__(self):
 
         self.api_key = settings.llm_api_key
-        self.llm = ChatGroq(api_key = self.api_key , model = settings.llm_model)
+        self._llm = ChatGroq(api_key = self.api_key , model = settings.llm_model)
 
-    async def generate(self , prompt: str) -> str:
+    @property
+    def llm(self):
+        return self._llm
 
-        response = await self.llm.ainvoke(prompt)
+    async def generate(self , prompt : str) -> str:
+
+        response = await self._llm.ainvoke(prompt)
         
         return response.content

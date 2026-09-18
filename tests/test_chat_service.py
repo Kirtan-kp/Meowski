@@ -1,8 +1,7 @@
 from langchain_core.documents import Document
 from langchain_core.messages import HumanMessage, AIMessage
-
+from app.llm.base import BaseLLM
 from app.services.chat_service import ChatService
-
 
 class FakeSessionService:
 
@@ -147,3 +146,54 @@ def test_chat_service_passes_user_and_session_to_graph():
     assert state["session_id"] == "session_123"
 
     assert config["configurable"]["thread_id"] == "user_123:session_123"
+
+def test_chat_service_uses_llm_factory(monkeypatch):
+
+    class FakeLLM(BaseLLM):
+
+        @property
+        def llm(self):
+            return "fake_langchain_llm"
+
+        async def generate(self, prompt: str) -> str:
+            return "fake response"
+
+    fake_llm = FakeLLM()
+
+    def fake_create_llm():
+        return fake_llm
+
+    def fake_create_retrieval_pipeline(**kwargs):
+        assert kwargs["llm"] == "fake_langchain_llm"
+        return "fake_retriever"
+
+    def fake_create_rag_graph(**kwargs):
+        assert kwargs["retriever"] == "fake_retriever"
+        assert kwargs["llm"] == "fake_langchain_llm"
+        return "fake_graph"
+
+    monkeypatch.setattr(
+        "app.services.chat_service.create_llm",
+        fake_create_llm,
+    )
+
+    monkeypatch.setattr(
+        "app.services.chat_service.create_retrieval_pipeline",
+        fake_create_retrieval_pipeline,
+    )
+
+    monkeypatch.setattr(
+        "app.services.chat_service.create_rag_graph",
+        fake_create_rag_graph,
+    )
+
+    session_service = FakeSessionService()
+
+    service = ChatService(
+        vector_store="fake_vector_store",
+        session_service=session_service,
+    )
+
+    assert service.llm is fake_llm
+    assert service.retriever == "fake_retriever"
+    assert service.rag_graph == "fake_graph"
