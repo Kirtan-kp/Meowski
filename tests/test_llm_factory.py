@@ -1,33 +1,33 @@
 import pytest
-
 from app.core.config import settings
 from app.llm.factory import create_llm
-from app.llm.providers.groq import GroqLLM
 
+def test_create_llm_returns_groq(monkeypatch):
 
-def test_create_llm_returns_groq():
-    original_provider = settings.llm_provider
+    class FakeGroqLLM:
+        pass
 
-    try:
-        settings.llm_provider = "groq"
+    monkeypatch.setattr(
+        "app.llm.factory.GroqLLM",
+        FakeGroqLLM,
+    )
 
-        llm = create_llm()
+    settings.llm_provider = "groq"
 
-        assert isinstance(llm, GroqLLM)
-        assert llm.llm is not None
+    llm = create_llm()
 
-    finally:
-        settings.llm_provider = original_provider
+    assert isinstance(llm, FakeGroqLLM)
 
+def test_create_llm_rejects_unsupported_provider(monkeypatch):
 
-def test_create_llm_rejects_unsupported_provider():
-    original_provider = settings.llm_provider
+    monkeypatch.setattr(
+        settings,
+        "llm_provider",
+        "unsupported",
+    )
 
-    try:
-        settings.llm_provider = "unsupported"
-
-        with pytest.raises(ValueError, match="Unsupported LLM provider"):
-            create_llm()
-
-    finally:
-        settings.llm_provider = original_provider
+    with pytest.raises(
+        ValueError,
+        match="Unsupported LLM provider",
+    ):
+        create_llm()
