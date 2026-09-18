@@ -18,8 +18,11 @@ class Settings(BaseSettings):
     redis_session_url : str = "redis://localhost:6379/1"
 
     retrieval_cache_version : int = 1
+
     llm_cache_ttl_seconds: int = 86400
     llm_cache_version: int = 1
+    llm_timeout_seconds: int = 30
+    llm_max_retries: int = 2
 
     rate_limit_requests: int = 60
     rate_limit_window_seconds: int = 60

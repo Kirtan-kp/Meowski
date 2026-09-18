@@ -5,7 +5,7 @@ from app.schemas.retrieval import RetrievalResponse, Source
 
 class FakeChatService:
 
-    def generate_response(self, message, session_id, user_id):
+    def generate_response(self, message, session_id, user_id , request_id):
 
         return RetrievalResponse(
             answer="Kirtan built a RAG chatbot using Qdrant.",
@@ -57,7 +57,7 @@ def test_chat_response_handles_empty_sources():
 
     class FakeChatService:
 
-        def generate_response(self, message, session_id, user_id):
+        def generate_response(self, message, session_id, user_id , request_id):
 
             return RetrievalResponse(
                 answer=(

@@ -21,3 +21,5 @@ class RAGState(TypedDict , total = False):
     user_id: str
 
     session_id: str
+
+    request_id: str

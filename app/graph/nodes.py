@@ -4,6 +4,10 @@ from langchain_core.messages import HumanMessage, AIMessage
 from qdrant_client.models import Filter, FieldCondition, MatchValue
 from app.rag.context import build_context
 from app.services.llm_cache_service import LLMCacheService
+import logging
+import time
+
+logger = logging.getLogger(__name__)
 
 def make_serializable(value):
 
@@ -22,6 +26,9 @@ def make_serializable(value):
     return value
 
 def retrieve_node(state : RAGState , retriever) -> dict:
+
+    request_id = state.get("request_id" , "unknown")
+    start_time = time.perf_counter()
 
     if state.get("retry_count" , 0) > 0:
         question = state.get("rewritten_question", state["question"])
@@ -57,7 +64,21 @@ def retrieve_node(state : RAGState , retriever) -> dict:
         ]
     )
 
-    documents = retriever.invoke(question , filter = access_filter)
+    try:
+        documents = retriever.invoke(question , filter = access_filter)
+        process_time = time.perf_counter() - start_time
+
+        logger.info(
+            "request_id=%s stage=retrieval latency_ms=%.2f documents=%s retry_count=%s",
+            request_id , process_time * 1000 , len(documents) , state.get("retry_count", 0))
+
+    except Exception:
+
+        process_time = time.perf_counter() - start_time
+
+        logger.exception("request_id=%s stage=retrieval failed latency_ms=%.2f" , request_id , process_time * 1000)
+
+        raise
 
     serializable_documents = [
         {
@@ -74,6 +95,8 @@ def retrieve_node(state : RAGState , retriever) -> dict:
 
 def generate_node(state : RAGState , prompt , llm) -> dict:
 
+    request_id = state.get("request_id", "unknown")
+    start_time = time.perf_counter()
     context = build_context(state["documents"])
 
     if state.get("retry_count", 0) > 0:
@@ -95,16 +118,42 @@ def generate_node(state : RAGState , prompt , llm) -> dict:
 
     if cached_answer is not None:
         answer = cached_answer
+        process_time = time.perf_counter() - start_time
+
+        logger.info(
+            "request_id=%s stage=generation cache_hit=true latency_ms=%.2f",
+            request_id,
+            process_time * 1000,
+        )
 
     else:
 
-        answer = (prompt | llm | StrOutputParser()).invoke(
-            {
-                "context" : context,
-                "question" : question,
-                "chat_history" : chat_history
-            }
-        )
+        try:
+            answer = (prompt | llm | StrOutputParser()).invoke(
+                {
+                    "context" : context,
+                    "question" : question,
+                    "chat_history" : chat_history
+                }
+            )
+            process_time = time.perf_counter() - start_time
+
+            logger.info(
+                "request_id=%s stage=generation cache_hit=false latency_ms=%.2f",
+                request_id,
+                process_time * 1000,
+            )
+        except Exception:
+
+            process_time = time.perf_counter() - start_time
+
+            logger.exception(
+                "request_id=%s stage=generation failed latency_ms=%.2f",
+                request_id,
+                process_time * 1000,
+            )
+
+            raise
 
         cache.set(
             question=question,
@@ -112,7 +161,7 @@ def generate_node(state : RAGState , prompt , llm) -> dict:
             chat_history=chat_history,
             user_id=state["user_id"],
             session_id=state["session_id"],
-            answer=answer,
+            answer=answer
         )
         
     return {"context" : context , "answer" : answer , "documents" : state["documents"] , 
@@ -129,8 +178,29 @@ def rewrite_query_node(state : RAGState , llm) -> dict:
                       f"Conversation history:\n{history_text}\n\n" 
                       f"Original question: {state['question']}\n\n" 
                       "Return only the rewritten question." )
-     
-    rewritten_question = llm.invoke(rewrite_prompt) 
+
+    start_time = time.perf_counter()
+    try:
+        rewritten_question = llm.invoke(rewrite_prompt) 
+        process_time = time.perf_counter() - start_time
+
+        logger.info(
+            "request_id=%s stage=query_rewrite latency_ms=%.2f",
+            state.get("request_id", "unknown"),
+            process_time * 1000,
+        )
+
+    except Exception:
+
+        process_time = time.perf_counter() - start_time
+
+        logger.exception(
+            "request_id=%s stage=query_rewrite failed latency_ms=%.2f",
+            state.get("request_id", "unknown"),
+            process_time * 1000,
+        )
+
+        raise
 
     return {"rewritten_question" : rewritten_question.content 
             if hasattr(rewritten_question , "content") 

@@ -68,6 +68,7 @@ def test_chat_service_preserves_conversation_history():
         message="What is my first question?",
         session_id="session_1",
         user_id="user_1",
+        request_id="test-request-id"
     )
 
     assert first_response.answer == "Answer to: What is my first question?"
@@ -92,6 +93,7 @@ def test_chat_service_preserves_conversation_history():
         message="What is my second question?",
         session_id="session_1",
         user_id="user_1",
+        request_id="test-request-id"
     )
 
     assert second_response.answer == "Answer to: What is my second question?"
@@ -138,6 +140,7 @@ def test_chat_service_passes_user_and_session_to_graph():
         message="Hello",
         session_id="session_123",
         user_id="user_123",
+        request_id="test-request-id"
     )
 
     state, config = service.rag_graph.calls[0]
@@ -197,3 +200,33 @@ def test_chat_service_uses_llm_factory(monkeypatch):
     assert service.llm is fake_llm
     assert service.retriever == "fake_retriever"
     assert service.rag_graph == "fake_graph"
+
+def test_chat_service_passes_request_id_to_graph():
+
+    captured_state = {}
+
+    class FakeGraph:
+
+        def invoke(self, state, config):
+
+            captured_state.update(state)
+
+            return {
+                "answer": "Test answer",
+                "documents": [],
+                "chat_history": [],
+            }
+
+    service = ChatService.__new__(ChatService)
+
+    service.rag_graph = FakeGraph()
+    service.session_service = FakeSessionService()
+
+    service.generate_response(
+        message="Hello",
+        session_id="session_1",
+        user_id="user_1",
+        request_id="request_123",
+    )
+
+    assert captured_state["request_id"] == "request_123"
