@@ -31,3 +31,6 @@ class CacheService:
 
     def delete(self , key : str):
         self.redis.delete(key)
+
+    def increment(self, key: str):
+        return self.redis.incr(key)

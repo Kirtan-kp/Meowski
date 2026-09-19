@@ -195,6 +195,7 @@ def test_chat_service_uses_llm_factory(monkeypatch):
     service = ChatService(
         vector_store="fake_vector_store",
         session_service=session_service,
+        bm25_index_service=None
     )
 
     assert service.llm is fake_llm

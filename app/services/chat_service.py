@@ -9,18 +9,18 @@ from app.services.session_service import SessionService
 from langchain_core.messages import HumanMessage, AIMessage
 from app.schemas.retrieval import RetrievalResponse
 from app.llm.exceptions import LLMError,LLMProviderError,LLMRateLimitError,LLMTimeoutError
-
+from app.services.bm25_index_service import BM25IndexService
 
 logger = logging.getLogger(__name__)
 
 class ChatService:
 
-    def __init__(self , vector_store , session_service : SessionService):
+    def __init__(self , vector_store , session_service : SessionService , bm25_index_service: BM25IndexService):
 
         self.vector_store = vector_store
         self.llm = create_llm()
         self.retriever = create_retrieval_pipeline(vector_store = self.vector_store , llm = self.llm.llm , k = 10 , 
-                                      top_n = 3 , search_type = "mmr")
+                                      top_n = 3 , search_type = "mmr" , bm25_index_service = bm25_index_service)
         self.rag_graph = create_rag_graph(retriever = self.retriever , llm = self.llm.llm , prompt = RAG_PROMPT)
         self.session_service = session_service
 

@@ -2,6 +2,8 @@ from langchain_core.documents import Document
 from app.services.cache_service import CacheService
 
 class RetrievalCacheService:
+
+    VERSION_KEY = "cache:retrieval:document_version"
     def __init__(self):
         self.cache = CacheService()
 
@@ -41,3 +43,14 @@ class RetrievalCacheService:
 
     def delete(self, key: str):
         self.cache.delete(key)
+
+    def get_version(self):
+        version = self.cache.get(self.VERSION_KEY)
+
+        if version is None:
+            return 0
+
+        return int(version)
+
+    def invalidate(self):
+        return self.cache.increment(self.VERSION_KEY)

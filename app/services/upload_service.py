@@ -8,13 +8,17 @@ from app.db.models import FileRecord
 import hashlib
 from sqlalchemy import select
 from app.ingestion.validators import validate_file, MAX_FILE_SIZE
+from app.services.bm25_index_service import BM25IndexService
 
 class UploadService:
 
-    def __init__(self , vector_store : QdrantVectorStore , db , session_service):
+    def __init__(self , vector_store : QdrantVectorStore , db , session_service , bm25_index_service = None ,
+                retrieval_cache_service=None):
         self.vector_store = vector_store
         self.db = db
         self.session_service = session_service
+        self.bm25_index_service = bm25_index_service
+        self.retrieval_cache_service = retrieval_cache_service
 
     def upload(self , file , user_id : str , session_id : str):
 
@@ -55,6 +59,12 @@ class UploadService:
             self.vector_store.add_documents(chunks)
             file_record.status = "ready"
             self.db.commit()
+
+            if self.bm25_index_service is not None:
+                self.bm25_index_service.invalidate_session(user_id = user_id , session_id = session_id)
+
+            if self.retrieval_cache_service is not None:
+                self.retrieval_cache_service.invalidate()
 
             return chunks
         

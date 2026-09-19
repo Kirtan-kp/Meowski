@@ -8,6 +8,7 @@ class FakeCache:
     def __init__(self):
         self.data = {}
         self.set_calls = 0
+        self.version = 0
 
     def get(self, key):
         return self.data.get(key)
@@ -19,7 +20,13 @@ class FakeCache:
     def delete(self, key):
         self.data.pop(key, None)
 
-
+    def get_version(self):
+        return self.version
+    
+    def increment(self, key):
+        self.version += 1
+        return self.version
+    
 class FakeRetriever(BaseRetriever):
 
     calls: int = 0
@@ -163,3 +170,21 @@ def test_same_filter_uses_cache():
     assert first == second
     assert retriever.calls == 1
     assert cache.set_calls == 1
+
+def test_retrieval_cache_version_starts_at_zero():
+    cache = FakeCache()
+    assert cache.get_version() == 0
+
+
+def test_retrieval_cache_version_increments():
+    cache = FakeCache()
+
+    assert cache.get_version() == 0
+
+    cache.increment("cache:retrieval:document_version")
+
+    assert cache.get_version() == 1
+
+    cache.increment("cache:retrieval:document_version")
+
+    assert cache.get_version() == 2

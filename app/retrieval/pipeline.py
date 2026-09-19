@@ -13,6 +13,7 @@ class RuntimeFilteredEnsembleRetriever(BaseRetriever):
     vector_retriever : object
     bm25_retriever : object
     weights : list[float]
+    candidate_limit: int = 20
 
     def _matches_filter(self , document , filter):
         if filter is None:
@@ -67,7 +68,7 @@ class RuntimeFilteredEnsembleRetriever(BaseRetriever):
 
         results = sorted(ranked_documents.values() , key = lambda item : item[1] , reverse = True)
 
-        return [document for document , score in results if self._matches_filter(document , filter)]
+        return [document for document , score in results[:self.candidate_limit] if self._matches_filter(document , filter)]
 
 class CachedRetriever(BaseRetriever):
 
@@ -75,16 +76,34 @@ class CachedRetriever(BaseRetriever):
     cache : object
     ttl_seconds : int = 3600
 
-    def _cache_key(self , query , filter):
+    def _cache_key(self, query, filter):
         filter_data = {}
 
         if filter is not None:
-            filter_data = filter.model_dump(exclude_none = True)
+            filter_data = filter.model_dump(exclude_none=True)
 
-        raw_key = json.dumps({"query" : query , "filter" : filter_data} , sort_keys = True , default = str)
-        query_hash = hashlib.sha256(raw_key.encode("utf-8")).hexdigest()
+        raw_key = json.dumps(
+            {
+                "query": query,
+                "filter": filter_data
+            },
+            sort_keys=True,
+            default=str
+        )
 
-        return (f"cache:retrieval:" f"{settings.qdrant_collection}:" f"v{settings.retrieval_cache_version}:" f"{query_hash}")
+        query_hash = hashlib.sha256(
+            raw_key.encode("utf-8")
+        ).hexdigest()
+
+        document_version = self.cache.get_version()
+
+        return (
+            f"cache:retrieval:"
+            f"{settings.qdrant_collection}:"
+            f"v{settings.retrieval_cache_version}:"
+            f"d{document_version}:"
+            f"{query_hash}"
+        )
 
     def _get_relevant_documents(self , query , * , run_manager , filter = None):
 
@@ -99,13 +118,19 @@ class CachedRetriever(BaseRetriever):
 
         return documents
 
-def create_retrieval_pipeline(vector_store , llm , k: int = 10 , top_n: int = 3 , search_type: str = "mmr", search_kwargs: dict | None = None , filter = None) -> BaseRetriever:
+def create_retrieval_pipeline(vector_store , llm , k: int = 10 , top_n: int = 3 , search_type: str = "mmr", 
+                            search_kwargs: dict | None = None , filter = None ,  candidate_limit: int | None = None ,
+                            bm25_index_service = None) -> BaseRetriever:
 
     vector_retriever = create_vector_retriever(vector_store = vector_store , k = k , search_type = search_type , search_kwargs = search_kwargs )
 
-    bm25_retriever = create_bm25_retriever(vector_store = vector_store , filter = filter , k = k)
+    bm25_retriever = create_bm25_retriever(vector_store = vector_store , filter = filter , k = k , index_service = bm25_index_service)
 
-    hybrid_retriever = RuntimeFilteredEnsembleRetriever(vector_retriever = vector_retriever , bm25_retriever = bm25_retriever , weights = [0.5, 0.5])
+    if candidate_limit is None:
+        candidate_limit = k * 2
+
+    hybrid_retriever = RuntimeFilteredEnsembleRetriever(vector_retriever = vector_retriever , bm25_retriever = bm25_retriever , 
+                                                    weights = [0.5, 0.5] , candidate_limit = candidate_limit)
 
     multi_query_retriever = create_multi_query_retriever(retriever = hybrid_retriever , llm = llm)
 

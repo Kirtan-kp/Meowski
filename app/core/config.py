@@ -17,7 +17,7 @@ class Settings(BaseSettings):
     redis_cache_url : str = "redis://localhost:6379/0"
     redis_session_url : str = "redis://localhost:6379/1"
 
-    retrieval_cache_version : int = 1
+    retrieval_cache_version : int = 2
 
     llm_cache_ttl_seconds: int = 86400
     llm_cache_version: int = 1

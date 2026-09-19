@@ -1,15 +1,14 @@
 from datetime import datetime, timezone
-
 from sqlalchemy import select
-
 from app.db.models import FileRecord, SessionRecord
 
-
 class CleanupService:
-    def __init__(self, db, vector_store, session_service=None):
+    def __init__(self, db, vector_store, state_service=None, bm25_index_service=None, retrieval_cache_service=None):
         self.db = db
         self.vector_store = vector_store
-        self.session_service = session_service
+        self.state_service = state_service
+        self.bm25_index_service = bm25_index_service
+        self.retrieval_cache_service = retrieval_cache_service
 
     def cleanup_expired_files(self):
         now = datetime.now(timezone.utc)
@@ -25,13 +24,22 @@ class CleanupService:
         deleted_file_ids = []
 
         for file_record in expired_files:
+
             self.vector_store.delete_by_file_id(file_record.id)
+            if self.bm25_index_service:
+                self.bm25_index_service.invalidate_session(
+                    user_id=file_record.user_id,
+                    session_id=file_record.session_id,
+                )
 
             file_record.status = "expired"
             deleted_file_ids.append(file_record.id)
 
         if expired_files:
             self.db.commit()
+
+            if self.retrieval_cache_service is not None:
+                self.retrieval_cache_service.invalidate()
 
         return deleted_file_ids
 
@@ -51,8 +59,16 @@ class CleanupService:
             session.status = "expired"
             expired_session_ids.append(session.id)
 
-            if self.session_service:
-                self.session_service.state_service.delete_state(session.id)
+            if self.state_service:
+                self.state_service.delete_state(session.id)
+
+            if self.bm25_index_service:
+                self.bm25_index_service.invalidate_session(
+                    user_id=session.user_id,
+                    session_id=session.id,
+                )
+            if self.retrieval_cache_service:
+                self.retrieval_cache_service.invalidate()
 
         if expired_sessions:
             self.db.commit()

@@ -51,6 +51,13 @@ class FakeStateService:
     def delete_state(self, session_id):
         self.deleted_session_ids.append(session_id)
 
+class FakeRetrievalCacheService:
+    def __init__(self):
+        self.invalidate_calls = 0
+
+    def invalidate(self):
+        self.invalidate_calls += 1
+
 
 def test_cleanup_expired_files():
     expired_file = SimpleNamespace(
@@ -66,10 +73,12 @@ def test_cleanup_expired_files():
     )
 
     vector_store = FakeVectorStore()
+    retrieval_cache_service = FakeRetrievalCacheService()
 
     service = CleanupService(
         db=db,
         vector_store=vector_store,
+        retrieval_cache_service=retrieval_cache_service
     )
 
     result = service.cleanup_expired_files()
@@ -78,7 +87,27 @@ def test_cleanup_expired_files():
     assert vector_store.deleted_file_ids == ["file-1"]
     assert expired_file.status == "expired"
     assert db.committed is True
+    assert retrieval_cache_service.invalidate_calls == 1
 
+def test_cleanup_expired_files_does_not_invalidate_when_no_files_expire():
+    db = FakeDB(
+        files=[],
+        sessions=[],
+    )
+
+    vector_store = FakeVectorStore()
+    retrieval_cache_service = FakeRetrievalCacheService()
+
+    service = CleanupService(
+        db=db,
+        vector_store=vector_store,
+        retrieval_cache_service=retrieval_cache_service,
+    )
+
+    result = service.cleanup_expired_files()
+
+    assert result == []
+    assert retrieval_cache_service.invalidate_calls == 0
 
 def test_cleanup_expired_sessions():
     expired_session = SimpleNamespace(
@@ -102,7 +131,7 @@ def test_cleanup_expired_sessions():
     service = CleanupService(
         db=db,
         vector_store=vector_store,
-        session_service=session_service,
+        state_service=state_service,
     )
 
     result = service.cleanup_expired_sessions()
@@ -195,3 +224,93 @@ def test_cleanup_expired_file_removes_qdrant_vectors():
     finally:
         db.rollback()
         db.close()
+
+def test_cleanup_expired_file_invalidates_bm25_index():
+    expired_file = SimpleNamespace(
+        id="file-1",
+        user_id="user-1",
+        session_id="session-1",
+        scope="session",
+        status="ready",
+        expires_at=datetime.now(timezone.utc) - timedelta(hours=1),
+    )
+
+    db = FakeDB(
+        files=[expired_file],
+        sessions=[],
+    )
+
+    vector_store = FakeVectorStore()
+
+    class FakeBM25IndexService:
+        def __init__(self):
+            self.invalidated_sessions = []
+
+        def invalidate_session(self, user_id, session_id):
+            self.invalidated_sessions.append(
+                (user_id, session_id)
+            )
+
+    bm25_index_service = FakeBM25IndexService()
+
+    service = CleanupService(
+        db=db,
+        vector_store=vector_store,
+        bm25_index_service=bm25_index_service,
+    )
+
+    result = service.cleanup_expired_files()
+
+    assert result == ["file-1"]
+    assert vector_store.deleted_file_ids == ["file-1"]
+    assert bm25_index_service.invalidated_sessions == [
+        ("user-1", "session-1")
+    ]
+
+def test_cleanup_expired_session_invalidates_bm25_index():
+    expired_session = SimpleNamespace(
+        id="session-1",
+        user_id="user-1",
+        status="active",
+        expires_at=datetime.now(timezone.utc) - timedelta(hours=1),
+    )
+
+    db = FakeDB(
+        files=[],
+        sessions=[expired_session],
+    )
+
+    vector_store = FakeVectorStore()
+    state_service = FakeStateService()
+
+    session_service = SimpleNamespace(
+        state_service=state_service
+    )
+
+    class FakeBM25IndexService:
+        def __init__(self):
+            self.invalidated_sessions = []
+
+        def invalidate_session(self, user_id, session_id):
+            self.invalidated_sessions.append(
+                (user_id, session_id)
+            )
+
+    bm25_index_service = FakeBM25IndexService()
+
+    service = CleanupService(
+        db=db,
+        vector_store=vector_store,
+        state_service=state_service,
+        bm25_index_service=bm25_index_service,
+    )
+
+    result = service.cleanup_expired_sessions()
+
+    assert result == ["session-1"]
+    assert expired_session.status == "expired"
+    assert state_service.deleted_session_ids == ["session-1"]
+    assert bm25_index_service.invalidated_sessions == [
+        ("user-1", "session-1")
+    ]
+    assert db.committed is True

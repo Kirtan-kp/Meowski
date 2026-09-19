@@ -1,12 +1,14 @@
 from fastapi import APIRouter, Depends, File, Form, UploadFile, HTTPException
-from app.api.dependencies import get_vector_store , get_session_service
+from app.api.dependencies import get_vector_store , get_session_service , get_bm25_index_service, get_retrieval_cache_service
 from app.services.upload_service import UploadService
 from app.db.databse import get_db
 
 router = APIRouter()
 
-def get_upload_service(vector_store = Depends(get_vector_store) , db = Depends(get_db) , session_service = Depends(get_session_service)):
-    return UploadService(vector_store , db , session_service)
+def get_upload_service(vector_store = Depends(get_vector_store) , db = Depends(get_db) ,
+                       session_service = Depends(get_session_service) , bm25_index_service = Depends(get_bm25_index_service) ,
+                       retrieval_cache_service = Depends(get_retrieval_cache_service)):
+    return UploadService(vector_store , db , session_service , bm25_index_service , retrieval_cache_service)
 
 @router.post("/upload")
 def upload(file : UploadFile = File(...) , user_id : str = Form(...) ,

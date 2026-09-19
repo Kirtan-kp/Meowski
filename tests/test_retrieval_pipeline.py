@@ -283,3 +283,93 @@ def test_portfolio_documents_are_accessible_but_other_session_documents_are_bloc
 
         assert document.metadata.get("user_id") == "user_1"
         assert document.metadata.get("session_id") == "session_1"
+
+def test_rrf_respects_candidate_limit():
+
+    class FakeVectorRetriever:
+
+        def invoke(self, query, filter=None):
+            return [
+                Document(
+                    page_content=f"Vector document {index}",
+                    metadata={"_id": f"vector_{index}"}
+                )
+                for index in range(5)
+            ]
+
+    class FakeBM25Retriever:
+
+        def _get_relevant_documents(
+            self,
+            query,
+            run_manager,
+            filter=None
+        ):
+            return [
+                Document(
+                    page_content=f"BM25 document {index}",
+                    metadata={"_id": f"bm25_{index}"}
+                )
+                for index in range(5)
+            ]
+
+    retriever = RuntimeFilteredEnsembleRetriever(
+        vector_retriever=FakeVectorRetriever(),
+        bm25_retriever=FakeBM25Retriever(),
+        weights=[0.5, 0.5],
+        candidate_limit=3
+    )
+
+    documents = retriever.invoke("test query")
+
+    assert len(documents) == 3
+
+def test_rrf_combines_rankings_before_applying_candidate_limit():
+
+    shared_document = Document(
+        page_content="Shared relevant document",
+        metadata={"_id": "shared"}
+    )
+
+    vector_only_document = Document(
+        page_content="Vector only document",
+        metadata={"_id": "vector_only"}
+    )
+
+    bm25_only_document = Document(
+        page_content="BM25 only document",
+        metadata={"_id": "bm25_only"}
+    )
+
+    class FakeVectorRetriever:
+
+        def invoke(self, query, filter=None):
+            return [
+                shared_document,
+                vector_only_document
+            ]
+
+    class FakeBM25Retriever:
+
+        def _get_relevant_documents(
+            self,
+            query,
+            run_manager,
+            filter=None
+        ):
+            return [
+                shared_document,
+                bm25_only_document
+            ]
+
+    retriever = RuntimeFilteredEnsembleRetriever(
+        vector_retriever=FakeVectorRetriever(),
+        bm25_retriever=FakeBM25Retriever(),
+        weights=[0.5, 0.5],
+        candidate_limit=2
+    )
+
+    documents = retriever.invoke("test query")
+
+    assert len(documents) == 2
+    assert documents[0].metadata["_id"] == "shared"
