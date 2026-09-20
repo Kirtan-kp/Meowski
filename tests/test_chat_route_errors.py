@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from app.api.routes.chat import router, get_chat_service
-from app.llm.exceptions import LLMTimeoutError,LLMRateLimitError,LLMProviderError
+from app.llm.exceptions import LLMTimeoutError,LLMRateLimitError,LLMProviderError,LLMQuotaExceededError,LLMProviderDisabledError,LLMConcurrencyLimitError
 from app.middleware.request_logging import request_logging_middleware
 
 def create_app(error):
@@ -141,3 +141,20 @@ def test_chat_passes_request_id():
     assert response.status_code == 200
     assert len(captured_request_ids) == 1
     assert captured_request_ids[0]
+
+def test_chat_quota_exceeded_returns_429():
+    app, _ = create_app(LLMQuotaExceededError("LLM capacity is temporarily exhausted. Please try again later."))
+    response = TestClient(app).post("/chat", json={"message": "Hello", "session_id": "session_1", "user_id": "user_1"})
+    assert response.status_code == 429
+
+
+def test_chat_provider_disabled_returns_503():
+    app, _ = create_app(LLMProviderDisabledError("LLM provider is disabled by application policy"))
+    response = TestClient(app).post("/chat", json={"message": "Hello", "session_id": "session_1", "user_id": "user_1"})
+    assert response.status_code == 503
+
+
+def test_chat_concurrency_limit_returns_429():
+    app, _ = create_app(LLMConcurrencyLimitError("LLM capacity is busy. Please try again shortly."))
+    response = TestClient(app).post("/chat", json={"message": "Hello", "session_id": "session_1", "user_id": "user_1"})
+    assert response.status_code == 429

@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from app.schemas.chat import ChatRequest,ChatResponse
 from app.services.chat_service import ChatService
 from app.api.dependencies import get_vector_store,get_session_service,get_bm25_index_service
-from app.llm.exceptions import LLMTimeoutError,LLMRateLimitError,LLMProviderError
+from app.llm.exceptions import LLMTimeoutError,LLMRateLimitError,LLMProviderError,LLMQuotaExceededError,LLMProviderDisabledError,LLMConcurrencyLimitError
 
 router = APIRouter()
 def get_chat_service(vector_store = Depends(get_vector_store) , session_service = Depends(get_session_service) ,
@@ -29,6 +29,24 @@ def chat(request : ChatRequest , http_request : Request , chat_service : ChatSer
     except LLMProviderError as exc:
         raise HTTPException(
             status_code=503,
+            detail=str(exc),
+        ) from exc
+    
+    except LLMQuotaExceededError as exc:
+        raise HTTPException(
+            status_code=429,
+            detail=str(exc),
+        ) from exc
+
+    except LLMProviderDisabledError as exc:
+        raise HTTPException(
+            status_code=503,
+            detail=str(exc),
+        ) from exc
+
+    except LLMConcurrencyLimitError as exc:
+        raise HTTPException(
+            status_code=429,
             detail=str(exc),
         ) from exc
     return {

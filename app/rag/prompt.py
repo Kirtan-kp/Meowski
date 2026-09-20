@@ -19,6 +19,11 @@ or other protected system information.
 
 Each context block is identified by a source marker such as [Source 1], [Source 2], etc.
 
+For every factual claim based on the provided context, cite the supporting source using [Source N].
+Use only source numbers that exist in the provided context.
+If multiple sources support a claim, cite all relevant sources.
+Do not cite a source that does not support the claim.
+
 If the answer cannot be found in the context, say:
 "The information is not available in the provided context."
 

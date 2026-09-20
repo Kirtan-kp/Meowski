@@ -10,6 +10,8 @@ from langchain_core.messages import HumanMessage, AIMessage
 from app.schemas.retrieval import RetrievalResponse
 from app.llm.exceptions import LLMError,LLMProviderError,LLMRateLimitError,LLMTimeoutError
 from app.services.bm25_index_service import BM25IndexService
+from app.services.llm_quota_service import LLMQuotaService
+from app.llm.guarded import QuotaGuardedLLM, set_llm_request_context, reset_llm_request_context
 
 logger = logging.getLogger(__name__)
 
@@ -37,6 +39,7 @@ class ChatService:
                     chat_history.append(HumanMessage(content = item["content"]))
                 elif item["role"] == "assistant":
                     chat_history.append(AIMessage(content = item["content"]))
+        context_token = set_llm_request_context(user_id=user_id, session_id=session_id)
         try:
             result = self.rag_graph.invoke({"question" : message ,"user_id" : user_id , "session_id" : session_id , "request_id": request_id,
                                              "retry_count" : 0 , "chat_history": chat_history} , 
@@ -64,6 +67,8 @@ class ChatService:
             raise LLMProviderError(
                 "LLM provider request failed"
             ) from exc
+        finally:
+            reset_llm_request_context(context_token)
             
         updated_history = result.get("chat_history", [])
         clean_history = []

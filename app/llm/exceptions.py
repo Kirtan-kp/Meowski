@@ -9,3 +9,12 @@ class LLMRateLimitError(LLMError):
 
 class LLMProviderError(LLMError):
     """Raised when an LLM provider request fails."""
+
+class LLMQuotaExceededError(LLMError):
+    """Raised when the application zero-cost token budget is exhausted."""
+
+class LLMProviderDisabledError(LLMError):
+    """Raised when the configured LLM provider is disabled by runtime policy."""
+
+class LLMConcurrencyLimitError(LLMError):
+    """Raised when the application concurrency guard is saturated."""

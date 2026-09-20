@@ -24,6 +24,17 @@ class Settings(BaseSettings):
     llm_timeout_seconds: int = 30
     llm_max_retries: int = 2
 
+    llm_provider_enabled: bool = True
+    llm_daily_token_budget: int = 30000
+    llm_rolling_token_budget: int = 8000
+    llm_rolling_window_seconds: int = 3600
+    llm_session_daily_token_budget: int = 10000
+    llm_provider_daily_token_budget: int = 40000
+    llm_max_request_tokens: int = 8192
+    llm_max_output_tokens: int = 512
+    llm_token_estimate_safety_factor: float = 1.2
+    llm_concurrency_limit: int = 2
+
     rate_limit_requests: int = 60
     rate_limit_window_seconds: int = 60
 
