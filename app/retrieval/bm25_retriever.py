@@ -11,7 +11,39 @@ class SessionAwareBM25Retriever(BaseRetriever):
 
     def _cache_key(self, filter):
         if filter is None:
-            return BM25IndexService.portfolio_cache_key()
+            raise ValueError("BM25 retrieval requires an access filter.")
+
+        if filter.must:
+            metadata = {
+                condition.key: condition.match.value
+                for condition in filter.must
+                if condition.match is not None
+            }
+
+            # Explicit session-scoped filter
+            if metadata.get("metadata.scope") == "session":
+                user_id = metadata.get("metadata.user_id")
+                session_id = metadata.get("metadata.session_id")
+
+                if user_id and session_id:
+                    return BM25IndexService.session_cache_key(
+                        user_id,
+                        session_id,
+                    )
+
+            # Existing user + session filter format
+            if (
+                metadata.get("metadata.user_id")
+                and metadata.get("metadata.session_id")
+            ):
+                return BM25IndexService.session_cache_key(
+                    metadata["metadata.user_id"],
+                    metadata["metadata.session_id"],
+                )
+
+            # Portfolio-only filter
+            if metadata.get("metadata.scope") == "portfolio":
+                return BM25IndexService.portfolio_cache_key()
 
         if filter.should:
             has_portfolio = False
@@ -50,7 +82,7 @@ class SessionAwareBM25Retriever(BaseRetriever):
             if has_portfolio:
                 return BM25IndexService.portfolio_cache_key()
 
-        return BM25IndexService.portfolio_cache_key()
+        raise ValueError("Unsupported BM25 access filter.")
 
     def _load_documents(self, filter):
         documents = []
@@ -96,6 +128,9 @@ class SessionAwareBM25Retriever(BaseRetriever):
 
     def _get_relevant_documents(self , query , * , run_manager , filter = None):
 
+        if filter is None:
+            raise ValueError("BM25 retrieval requires an access filter.")
+        
         cache_key = self._cache_key(filter)
 
         retriever = self.index_service.get_or_create(
