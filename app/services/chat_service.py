@@ -12,12 +12,13 @@ from app.llm.exceptions import LLMError,LLMProviderError,LLMRateLimitError,LLMTi
 from app.services.bm25_index_service import BM25IndexService
 from app.services.llm_quota_service import LLMQuotaService
 from app.llm.guarded import QuotaGuardedLLM, set_llm_request_context, reset_llm_request_context
+from app.services.preference_service import PreferenceService
 
 logger = logging.getLogger(__name__)
 
 class ChatService:
 
-    def __init__(self , vector_store , session_service : SessionService , bm25_index_service: BM25IndexService):
+    def __init__(self , vector_store , session_service : SessionService , bm25_index_service : BM25IndexService , preference_service : PreferenceService):
 
         self.vector_store = vector_store
         self.llm = create_llm()
@@ -25,6 +26,7 @@ class ChatService:
                                       top_n = 3 , search_type = "mmr" , bm25_index_service = bm25_index_service)
         self.rag_graph = create_rag_graph(retriever = self.retriever , llm = self.llm.llm , prompt = RAG_PROMPT)
         self.session_service = session_service
+        self.preference_service = preference_service
 
     def generate_response(self , message : str , session_id : str , user_id : str , request_id: str) -> RetrievalResponse:
 
@@ -41,8 +43,19 @@ class ChatService:
                     chat_history.append(AIMessage(content = item["content"]))
         context_token = set_llm_request_context(user_id=user_id, session_id=session_id)
         try:
+            preferences = self.preference_service.get_preferences(
+                user_id=user_id,
+            )
+
+            preference_data = [
+                {
+                    "key": preference.key,
+                    "value": preference.value,
+                }
+                for preference in preferences
+            ]
             result = self.rag_graph.invoke({"question" : message ,"user_id" : user_id , "session_id" : session_id , "request_id": request_id,
-                                             "retry_count" : 0 , "chat_history": chat_history} , 
+                                             "retry_count" : 0 , "chat_history": chat_history , "preferences": preference_data} , 
                                         config = {"configurable" : {"thread_id" : f"{user_id}:{session_id}"}})
             logger.info(
                 "request_id=%s stage=chat_complete session_id=%s",

@@ -23,3 +23,5 @@ class RAGState(TypedDict , total = False):
     session_id: str
 
     request_id: str
+
+    preferences: list[dict]

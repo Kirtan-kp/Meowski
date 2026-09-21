@@ -2,6 +2,7 @@ from datetime import datetime
 from sqlalchemy import DateTime, String
 from sqlalchemy.orm import Mapped, mapped_column
 from app.db.databse import Base
+from sqlalchemy import DateTime, String, UniqueConstraint
 
 class FileRecord(Base):
 
@@ -26,3 +27,46 @@ class SessionRecord(Base):
     status : Mapped[str] = mapped_column(String , nullable = False)
     created_at : Mapped[datetime] = mapped_column(DateTime(timezone = True) , nullable = False)
     expires_at : Mapped[datetime] = mapped_column(DateTime(timezone = True) , nullable = False)
+
+class PreferenceRecord(Base):
+
+    __tablename__ = "preferences"
+
+    __table_args__ = (
+        UniqueConstraint(
+            "user_id",
+            "key",
+            name="uq_preference_user_key",
+        ),
+    )
+
+    id: Mapped[str] = mapped_column(
+        String,
+        primary_key=True,
+    )
+
+    user_id: Mapped[str] = mapped_column(
+        String,
+        nullable=False,
+        index=True,
+    )
+
+    key: Mapped[str] = mapped_column(
+        String,
+        nullable=False,
+    )
+
+    value: Mapped[str] = mapped_column(
+        String,
+        nullable=False,
+    )
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+    )
+
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+    )

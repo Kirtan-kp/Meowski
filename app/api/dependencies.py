@@ -7,6 +7,7 @@ from app.db.databse import get_db
 from app.services.retrieval_cache_service import RetrievalCacheService
 from app.services.llm_quota_service import LLMQuotaService
 from app.services.observability_service import ObservabilityService
+from app.services.preference_service import PreferenceService
 
 def get_vector_store():
     return QdrantVectorStore(embedding_dimension = 384)
@@ -34,3 +35,6 @@ def get_llm_quota_service():
 
 def get_observability_service():
     return observability_service
+
+def get_preference_service(db=Depends(get_db)):
+    return PreferenceService(db=db)

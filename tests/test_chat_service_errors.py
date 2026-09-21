@@ -6,6 +6,11 @@ from app.llm.exceptions import (
 )
 from app.services.chat_service import ChatService
 
+class FakePreferenceService:
+
+    def get_preferences(self, user_id):
+        return []
+
 class FakeChatService:
 
     def __init__(self):
@@ -61,6 +66,7 @@ def create_service(error):
     service.retriever = None
     service.rag_graph = FakeGraph(error)
     service.session_service = FakeSessionService()
+    service.preference_service = FakePreferenceService()
 
     return service
 

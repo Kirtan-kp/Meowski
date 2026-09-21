@@ -15,6 +15,7 @@ from app.services.cleanup_worker import cleanup_worker
 from app.services.cleanup_service import CleanupService
 from app.api.dependencies import get_vector_store,get_session_state_service,get_bm25_index_service,get_retrieval_cache_service
 from app.api.routes.metrics import router as metrics_router
+from app.api.routes.preferences import router as preferences_router
 
 setup_logging()
 
@@ -60,6 +61,7 @@ app.include_router(chat_router)
 app.include_router(upload_router)
 app.include_router(session_router)
 app.include_router(metrics_router)
+app.include_router(preferences_router)
 
 @app.get("/health", response_model = HealthResponse)
 def health():

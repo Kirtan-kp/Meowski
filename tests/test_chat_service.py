@@ -3,6 +3,11 @@ from langchain_core.messages import HumanMessage, AIMessage
 from app.llm.base import BaseLLM
 from app.services.chat_service import ChatService
 
+class FakePreferenceService:
+
+    def get_preferences(self, user_id):
+        return []
+
 class FakeSessionService:
 
     def __init__(self):
@@ -47,7 +52,6 @@ class FakeGraph:
 
 
 def create_chat_service():
-    session_service = FakeSessionService()
 
     service = ChatService.__new__(ChatService)
 
@@ -55,7 +59,8 @@ def create_chat_service():
     service.llm = None
     service.retriever = None
     service.rag_graph = FakeGraph()
-    service.session_service = session_service
+    service.session_service = FakeSessionService()
+    service.preference_service = FakePreferenceService()
 
     return service
 
@@ -195,7 +200,8 @@ def test_chat_service_uses_llm_factory(monkeypatch):
     service = ChatService(
         vector_store="fake_vector_store",
         session_service=session_service,
-        bm25_index_service=None
+        bm25_index_service=None,
+        preference_service=FakePreferenceService()
     )
 
     assert service.llm is fake_llm
@@ -222,6 +228,7 @@ def test_chat_service_passes_request_id_to_graph():
 
     service.rag_graph = FakeGraph()
     service.session_service = FakeSessionService()
+    service.preference_service = FakePreferenceService()
 
     service.generate_response(
         message="Hello",

@@ -177,7 +177,8 @@ def generate_node(state : RAGState , prompt , llm) -> dict:
                 {
                     "context" : context,
                     "question" : question,
-                    "chat_history" : chat_history
+                    "chat_history" : chat_history,
+                    "preferences": state.get("preferences", [])
                 }
             )
             process_time = time.perf_counter() - start_time
