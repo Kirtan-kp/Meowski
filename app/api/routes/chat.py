@@ -12,6 +12,7 @@ def get_chat_service(vector_store = Depends(get_vector_store) , session_service 
 @router.post("/chat", response_model = ChatResponse)
 def chat(request : ChatRequest , http_request : Request , chat_service : ChatService = Depends(get_chat_service)):
     try:
+        http_request.state.session_id = request.session_id
         response = chat_service.generate_response(message = request.message , session_id = request.session_id , user_id = request.user_id , 
                                                   request_id = http_request.state.request_id)
     except LLMTimeoutError as exc:

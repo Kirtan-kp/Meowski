@@ -1,6 +1,9 @@
 from contextvars import ContextVar
 from langchain_core.runnables import Runnable
 from app.services.llm_quota_service import LLMQuotaService
+from app.api.dependencies import get_observability_service
+from app.core.config import settings
+from app.llm.exceptions import LLMConcurrencyLimitError
 
 _llm_request_context: ContextVar[tuple[str, str] | None] = ContextVar(
     "llm_request_context", default=None
@@ -27,12 +30,25 @@ class QuotaGuardedLLM(Runnable):
 
     def invoke(self, input, config=None, **kwargs):
         user_id, session_id = self._context()
-        self.quota_service.reserve(
+        estimated_tokens = self.quota_service.reserve(
             input,
             user_id=user_id,
             session_id=session_id,
         )
-        concurrency_key = self.quota_service.acquire_concurrency()
+        observability = get_observability_service()
+
+        observability.record_llm(
+            provider=settings.llm_provider,
+            model=settings.llm_model,
+            estimated_tokens=estimated_tokens,
+        )
+        try:
+            concurrency_key = self.quota_service.acquire_concurrency()
+        except LLMConcurrencyLimitError:
+            get_observability_service().record_quota(
+                "concurrency_blocked"
+            )
+            raise
         try:
             return self.llm.invoke(input, config=config, **kwargs)
         finally:
@@ -40,12 +56,25 @@ class QuotaGuardedLLM(Runnable):
 
     async def ainvoke(self, input, config=None, **kwargs):
         user_id, session_id = self._context()
-        self.quota_service.reserve(
+        estimated_tokens = self.quota_service.reserve(
             input,
             user_id=user_id,
             session_id=session_id,
         )
-        concurrency_key = self.quota_service.acquire_concurrency()
+        observability = get_observability_service()
+
+        observability.record_llm(
+            provider=settings.llm_provider,
+            model=settings.llm_model,
+            estimated_tokens=estimated_tokens,
+        )
+        try:
+            concurrency_key = self.quota_service.acquire_concurrency()
+        except LLMConcurrencyLimitError:
+            get_observability_service().record_quota(
+                "concurrency_blocked"
+            )
+            raise
         try:
             return await self.llm.ainvoke(input, config=config, **kwargs)
         finally:

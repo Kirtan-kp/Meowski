@@ -170,6 +170,10 @@ class LLMQuotaService:
                 "stage=llm_quota outcome=blocked provider=%s user_id=%s session_id=%s estimated_tokens=%s",
                 provider, user_id, session_id, estimated_tokens,
             )
+            from app.api.dependencies import get_observability_service
+            get_observability_service().record_quota(
+                "blocked"
+            )
             raise LLMQuotaExceededError(
                 "LLM capacity is temporarily exhausted. Please try again later."
             )
@@ -177,5 +181,10 @@ class LLMQuotaService:
         logger.info(
             "stage=llm_quota outcome=reserved provider=%s user_id=%s session_id=%s estimated_tokens=%s",
             provider, user_id, session_id, estimated_tokens,
+        )
+        from app.api.dependencies import get_observability_service
+
+        get_observability_service().record_quota(
+            "reserved"
         )
         return estimated_tokens

@@ -2,6 +2,7 @@ import logging
 import time
 from fastapi import Request
 import uuid
+from app.api.dependencies import get_observability_service
 
 logger = logging.getLogger(__name__)  #basically gets file name
 
@@ -10,32 +11,69 @@ async def request_logging_middleware(request : Request , call_next):
     request_id = str(uuid.uuid4())
     request.state.request_id = request_id
     start_time = time.perf_counter()
+    observability = get_observability_service()
 
     try:
         response = await call_next(request)
 
-        process_time = time.perf_counter() - start_time
+        latency_ms = (
+            time.perf_counter() - start_time
+        ) * 1000
+
+        observability.record_request(
+            request_id=request_id,
+            route=request.url.path,
+            method=request.method,
+            status_code=response.status_code,
+            latency_ms=latency_ms,
+            session_id=getattr(
+                request.state,
+                "session_id",
+                None,
+            ),
+        )
 
         logger.info(
-            "%s %s completed in %.4fs with status %s",
-            request.method,
+            "request_id=%s route=%s method=%s status=%s latency_ms=%.2f",
+            request_id,
             request.url.path,
-            process_time,
+            request.method,
             response.status_code,
+            latency_ms
         )
         response.headers["X-Request-ID"] = request_id
 
         return response
-    except Exception:
+    
+    except Exception as exc:
 
-        process_time = time.perf_counter() - start_time
+        latency_ms = (
+            time.perf_counter() - start_time
+        ) * 1000
+
+        error_category = type(exc).__name__
+
+        observability.record_request(
+            request_id=request_id,
+            route=request.url.path,
+            method=request.method,
+            status_code=500,
+            latency_ms=latency_ms,
+            session_id=getattr(
+                request.state,
+                "session_id",
+                None,
+            ),
+            error_category=error_category,
+        )
 
         logger.exception(
-            "request_id=%s %s %s failed after %.4fs",
+            "request_id=%s route=%s method=%s error_category=%s latency_ms=%.2f",
             request_id,
-            request.method,
             request.url.path,
-            process_time,
+            request.method,
+            error_category,
+            latency_ms
         )
 
         raise

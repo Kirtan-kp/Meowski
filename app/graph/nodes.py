@@ -6,6 +6,7 @@ from app.rag.context import build_context
 from app.services.llm_cache_service import LLMCacheService
 import logging
 import time
+from app.api.dependencies import get_observability_service
 
 logger = logging.getLogger(__name__)
 
@@ -66,7 +67,50 @@ def retrieve_node(state : RAGState , retriever) -> dict:
 
     try:
         documents = retriever.invoke(question , filter = access_filter)
+        document_ids = [
+            str(
+                document.metadata.get(
+                    "_id",
+                    document.metadata.get(
+                        "file_id",
+                        "unknown",
+                    ),
+                )
+            )
+            for document in documents
+        ]
+
+        retrieval_scores = [
+            float(
+                document.metadata.get(
+                    "retrieval_score",
+                    document.metadata.get(
+                        "score",
+                        0,
+                    ),
+                )
+            )
+            for document in documents
+        ]
+
+        reranker_scores = [
+            float(
+                document.metadata.get(
+                    "relevance_score",
+                    0,
+                )
+            )
+            for document in documents
+        ]
         process_time = time.perf_counter() - start_time
+        observability = get_observability_service()
+
+        observability.record_retrieval(
+            document_ids=document_ids,
+            retrieval_scores=retrieval_scores,
+            reranker_scores=reranker_scores,
+            latency_ms=process_time * 1000,
+        )
 
         logger.info(
             "request_id=%s stage=retrieval latency_ms=%.2f documents=%s retry_count=%s",
