@@ -30,7 +30,7 @@ class UploadService:
         if len(file_bytes) > MAX_FILE_SIZE:
             raise ValueError("File size exceeds the 10 MB limit.")
         
-        suffix = validate_file(file.filename , len(file_bytes))        
+        suffix = validate_file(file.filename, len(file_bytes), file_bytes)
         file_hash = hashlib.sha256(file_bytes).hexdigest()
         existing_file = self.db.execute(
             select(FileRecord).where(FileRecord.user_id == user_id , FileRecord.session_id == session_id,

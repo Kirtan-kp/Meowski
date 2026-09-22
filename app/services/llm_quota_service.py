@@ -137,8 +137,10 @@ class LLMQuotaService:
     ) -> int:
         provider = provider or settings.llm_provider
 
-        if not settings.llm_provider_enabled:
-            raise LLMProviderDisabledError("LLM provider is disabled by application policy")
+        if not settings.is_provider_enabled(provider):
+            raise LLMProviderDisabledError(
+                f"LLM provider '{provider}' is disabled by application policy"
+            )
 
         estimated_tokens = self.estimate_request_tokens(prompt)
 
@@ -167,8 +169,8 @@ class LLMQuotaService:
 
         if not allowed:
             logger.warning(
-                "stage=llm_quota outcome=blocked provider=%s user_id=%s session_id=%s estimated_tokens=%s",
-                provider, user_id, session_id, estimated_tokens,
+                "stage=llm_quota outcome=blocked provider=%s session_id=%s estimated_tokens=%s",
+                provider, session_id, estimated_tokens,
             )
             from app.api.dependencies import get_observability_service
             get_observability_service().record_quota(
@@ -179,8 +181,8 @@ class LLMQuotaService:
             )
 
         logger.info(
-            "stage=llm_quota outcome=reserved provider=%s user_id=%s session_id=%s estimated_tokens=%s",
-            provider, user_id, session_id, estimated_tokens,
+            "stage=llm_quota outcome=reserved provider=%s session_id=%s estimated_tokens=%s",
+            provider, session_id, estimated_tokens,
         )
         from app.api.dependencies import get_observability_service
 

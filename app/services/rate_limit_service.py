@@ -1,10 +1,15 @@
 import time
 import redis
+import hashlib
 from app.core.config import settings
 
 class RateLimitService:
     def __init__(self):
         self.redis = redis.Redis.from_url(settings.redis_cache_url , decode_responses = True)
+
+    def scoped_key(self, *parts: str) -> str:
+        value = "|".join(parts)
+        return hashlib.sha256(value.encode("utf-8")).hexdigest()[:32]
 
     def is_allowed(self , key : str , limit : int , window_seconds : int) -> bool:
 

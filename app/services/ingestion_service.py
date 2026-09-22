@@ -4,6 +4,11 @@ from app.ingestion.cleaner import clean
 from langchain_community.document_loaders import PyPDFLoader,TextLoader,Docx2txtLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 import os
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeoutError
+import threading
+from app.core.config import settings
+
+_parse_semaphore = threading.BoundedSemaphore(settings.parser_concurrency_limit)
 
 class IngestionService:
 
@@ -18,31 +23,51 @@ class IngestionService:
         self.file_size = os.path.getsize(file_path)
         self.scope = scope
 
-    def ingest(self):
-
-        extension = validate_file(self.file_path , self.file_size)
+    def _load_documents(self):
+        extension = validate_file(self.file_path, self.file_size)
         loader = self._parsers[extension](self.file_path)
+        return loader.load()
 
-        docs = loader.load()
+    def ingest(self):
+        if not _parse_semaphore.acquire(timeout=settings.parser_timeout_seconds):
+            raise ValueError("Document parsing capacity is temporarily busy.")
 
-        for document in docs:
-            document.page_content = clean(
-                document.page_content
-            )
+        try:
+            with ThreadPoolExecutor(max_workers=1, thread_name_prefix="document-parser") as executor:
+                future = executor.submit(self._load_documents)
+                try:
+                    docs = future.result(timeout=settings.parser_timeout_seconds)
+                except FutureTimeoutError as exc:
+                    future.cancel()
+                    raise ValueError("Document parsing timed out.") from exc
 
-        chunks = self.splitter.split_documents(docs)
-        created_at = datetime.now(timezone.utc)
-        expires_at = (created_at + timedelta(hours = 24) if self.scope == "session" else None)
+            total_text = 0
+            for document in docs:
+                document.page_content = clean(document.page_content)
+                total_text += len(document.page_content)
 
-        for chunk in chunks:
-            chunk.metadata.update({"file_id" : self.file_id , "file_hash" : self.file_hash , 
-                                   "scope" : self.scope , "created_at" : created_at.isoformat()})
-            
-            if self.scope == "session":
-                chunk.metadata["user_id"] = self.user_id
-                chunk.metadata["session_id"] = self.session_id
-                
-            if expires_at is not None:
-                chunk.metadata["expires_at"] = expires_at.isoformat()
-            
-        return chunks
+            if total_text > settings.max_upload_text_chars:
+                raise ValueError(
+                    f"Document text exceeds the {settings.max_upload_text_chars} character limit."
+                )
+
+            chunks = self.splitter.split_documents(docs)
+            created_at = datetime.now(timezone.utc)
+            expires_at = created_at + timedelta(hours=24) if self.scope == "session" else None
+
+            for chunk in chunks:
+                chunk.metadata.update({
+                    "file_id": self.file_id,
+                    "file_hash": self.file_hash,
+                    "scope": self.scope,
+                    "created_at": created_at.isoformat(),
+                })
+                if self.scope == "session":
+                    chunk.metadata["user_id"] = self.user_id
+                    chunk.metadata["session_id"] = self.session_id
+                if expires_at is not None:
+                    chunk.metadata["expires_at"] = expires_at.isoformat()
+
+            return chunks
+        finally:
+            _parse_semaphore.release()

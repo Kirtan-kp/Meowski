@@ -83,7 +83,7 @@ def test_guard_reserves_before_provider_call():
             self.calls.append((prompt, kwargs))
             return 100
 
-        def acquire_concurrency(self):
+        def acquire_concurrency(self , provider=None):
             self.concurrency_calls.append("acquire")
             return "test-concurrency-key"
 
@@ -158,7 +158,7 @@ def test_concurrency_guard_releases_after_provider_call():
         def reserve(self, prompt, **kwargs):
             return 100
 
-        def acquire_concurrency(self):
+        def acquire_concurrency(self, provider=None):
             return "key"
 
         def release_concurrency(self, key):

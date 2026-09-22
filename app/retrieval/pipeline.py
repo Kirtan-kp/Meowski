@@ -85,7 +85,9 @@ class CachedRetriever(BaseRetriever):
         raw_key = json.dumps(
             {
                 "query": query,
-                "filter": filter_data
+                "filter": filter_data,
+                "embedding_model": settings.embedding_model,
+                "llm_model": settings.llm_model,
             },
             sort_keys=True,
             default=str

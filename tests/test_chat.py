@@ -2,6 +2,7 @@ from fastapi.testclient import TestClient
 from app.main import app
 from app.api.routes.chat import get_chat_service
 from app.schemas.retrieval import RetrievalResponse, Source
+from app.api.dependencies import get_rate_limit_service
 
 class FakeChatService:
 
@@ -24,6 +25,7 @@ class FakeChatService:
 def test_chat_response_includes_sources():
 
     app.dependency_overrides[get_chat_service] = lambda: FakeChatService()
+    app.dependency_overrides[get_rate_limit_service] = lambda: type("RateLimits", (), {"scoped_key": lambda self, *parts: "test", "is_allowed": lambda self, **kwargs: True})()
 
     client = TestClient(app)
 
@@ -68,6 +70,7 @@ def test_chat_response_handles_empty_sources():
             )
 
     app.dependency_overrides[get_chat_service] = lambda: FakeChatService()
+    app.dependency_overrides[get_rate_limit_service] = lambda: type("RateLimits", (), {"scoped_key": lambda self, *parts: "test", "is_allowed": lambda self, **kwargs: True})()
 
     client = TestClient(app)
 

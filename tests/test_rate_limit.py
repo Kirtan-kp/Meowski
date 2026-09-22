@@ -29,3 +29,10 @@ def test_rate_limit_blocks_requests_after_limit():
         assert service.is_allowed(key = "test" , limit = 3 , window_seconds = 60) is True
 
     assert service.is_allowed(key = "test" , limit = 3 , window_seconds = 60) is False
+
+def test_scoped_key_does_not_expose_identifiers():
+    service = RateLimitService()
+    key = service.scoped_key("user_123", "session_456")
+    assert "user_123" not in key
+    assert "session_456" not in key
+    assert len(key) == 32

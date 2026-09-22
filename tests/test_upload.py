@@ -2,6 +2,7 @@ from fastapi.testclient import TestClient
 from app.services.upload_service import UploadService
 from app.main import app
 from app.api.routes.upload import get_upload_service
+from app.api.dependencies import get_rate_limit_service
 import pytest
 from app.ingestion.validators import validate_file
 
@@ -52,8 +53,10 @@ def override_upload_service():
 def upload_service_override():
 
     app.dependency_overrides[get_upload_service] = override_upload_service
+    app.dependency_overrides[get_rate_limit_service] = lambda: type("RateLimits", (), {"scoped_key": lambda self, *parts: "test", "is_allowed": lambda self, **kwargs: True})()
     yield
     app.dependency_overrides.pop(get_upload_service , None)
+    app.dependency_overrides.pop(get_rate_limit_service , None)
 
 client = TestClient(app)
 

@@ -3,6 +3,7 @@ from fastapi.testclient import TestClient
 from app.api.routes.chat import router, get_chat_service
 from app.llm.exceptions import LLMTimeoutError,LLMRateLimitError,LLMProviderError,LLMQuotaExceededError,LLMProviderDisabledError,LLMConcurrencyLimitError
 from app.middleware.request_logging import request_logging_middleware
+from app.api.dependencies import get_rate_limit_service
 
 def create_app(error):
 
@@ -35,7 +36,16 @@ def create_app(error):
         return FakeChatService()
 
     app.dependency_overrides[get_chat_service] = fake_get_chat_service
-    app.include_router(router)
+
+    class AllowAllRateLimits:
+        def scoped_key(self, *parts):
+            return "test"
+
+        def is_allowed(self, **kwargs):
+            return True
+
+    app.dependency_overrides[get_rate_limit_service] = lambda: AllowAllRateLimits()
+    app.include_router(router, prefix="/api/v1")
 
     return app, captured_request_ids
 
@@ -49,7 +59,7 @@ def test_chat_timeout_returns_504():
     client = TestClient(app)
 
     response = client.post(
-        "/chat",
+        "/api/v1/chat",
         json={
             "message": "Hello",
             "session_id": "session_1",
@@ -70,7 +80,7 @@ def test_chat_rate_limit_returns_429():
     client = TestClient(app)
 
     response = client.post(
-        "/chat",
+        "/api/v1/chat",
         json={
             "message": "Hello",
             "session_id": "session_1",
@@ -91,7 +101,7 @@ def test_chat_provider_error_returns_503():
     client = TestClient(app)
 
     response = client.post(
-        "/chat",
+        "/api/v1/chat",
         json={
             "message": "Hello",
             "session_id": "session_1",
@@ -110,7 +120,7 @@ def test_chat_success_returns_200():
     client = TestClient(app)
 
     response = client.post(
-        "/chat",
+        "/api/v1/chat",
         json={
             "message": "Hello",
             "session_id": "session_1",
@@ -130,7 +140,7 @@ def test_chat_passes_request_id():
     client = TestClient(app)
 
     response = client.post(
-        "/chat",
+        "/api/v1/chat",
         json={
             "message": "Hello",
             "session_id": "session_1",
@@ -144,17 +154,17 @@ def test_chat_passes_request_id():
 
 def test_chat_quota_exceeded_returns_429():
     app, _ = create_app(LLMQuotaExceededError("LLM capacity is temporarily exhausted. Please try again later."))
-    response = TestClient(app).post("/chat", json={"message": "Hello", "session_id": "session_1", "user_id": "user_1"})
+    response = TestClient(app).post("/api/v1/chat", json={"message": "Hello", "session_id": "session_1", "user_id": "user_1"})
     assert response.status_code == 429
 
 
 def test_chat_provider_disabled_returns_503():
     app, _ = create_app(LLMProviderDisabledError("LLM provider is disabled by application policy"))
-    response = TestClient(app).post("/chat", json={"message": "Hello", "session_id": "session_1", "user_id": "user_1"})
+    response = TestClient(app).post("/api/v1/chat", json={"message": "Hello", "session_id": "session_1", "user_id": "user_1"})
     assert response.status_code == 503
 
 
 def test_chat_concurrency_limit_returns_429():
     app, _ = create_app(LLMConcurrencyLimitError("LLM capacity is busy. Please try again shortly."))
-    response = TestClient(app).post("/chat", json={"message": "Hello", "session_id": "session_1", "user_id": "user_1"})
+    response = TestClient(app).post("/api/v1/chat", json={"message": "Hello", "session_id": "session_1", "user_id": "user_1"})
     assert response.status_code == 429

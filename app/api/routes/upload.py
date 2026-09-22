@@ -1,8 +1,10 @@
 from fastapi import APIRouter, Depends, File, Form, UploadFile, HTTPException
-from app.api.dependencies import get_vector_store , get_session_service , get_bm25_index_service, get_retrieval_cache_service
+from app.api.dependencies import get_vector_store , get_session_service , get_bm25_index_service, get_retrieval_cache_service, get_rate_limit_service
 from app.services.upload_service import UploadService
 from app.db.databse import get_db
 from app.schemas.documents import DocumentResponse
+from app.core.config import settings
+from app.services.rate_limit_service import RateLimitService
 
 router = APIRouter()
 
@@ -13,7 +15,16 @@ def get_upload_service(vector_store = Depends(get_vector_store) , db = Depends(g
 
 @router.post("/documents")
 def upload(file : UploadFile = File(...) , user_id : str = Form(...) ,
-           session_id : str = Form(...) , upload_service : UploadService = Depends(get_upload_service)):
+           session_id : str = Form(...) , upload_service : UploadService = Depends(get_upload_service),
+           rate_limits: RateLimitService = Depends(get_rate_limit_service)):
+    session_allowed = rate_limits.is_allowed(
+        key=f"session:upload:{rate_limits.scoped_key(user_id, session_id)}",
+        limit=settings.session_rate_limit_requests,
+        window_seconds=settings.session_rate_limit_window_seconds,
+    )
+    if not session_allowed:
+        raise HTTPException(status_code=429, detail="Session rate limit exceeded")
+
     try:
         chunks = upload_service.upload(file = file , user_id = user_id , session_id = session_id)
 

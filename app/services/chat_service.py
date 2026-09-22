@@ -30,7 +30,7 @@ class ChatService:
 
     def generate_response(self , message : str , session_id : str , user_id : str , request_id: str) -> RetrievalResponse:
 
-        logger.info("request_id=%s stage=chat_start session_id=%s user_id=%s" , request_id , session_id , user_id)
+        logger.info("request_id=%s stage=chat_start session_id=%s" , request_id , session_id)
 
         state = self.session_service.get_state(session_id = session_id , user_id = user_id)
         chat_history = []

@@ -29,7 +29,9 @@ class LLMCacheService:
 
         payload = {
             "version": settings.llm_cache_version,
+            "provider": settings.llm_provider,
             "model": settings.llm_model,
+            "persona_prompt_version": settings.persona_prompt_version,
             "user_id": user_id,
             "session_id": session_id,
             "question": question,

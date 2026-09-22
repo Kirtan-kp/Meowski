@@ -8,6 +8,7 @@ from app.services.retrieval_cache_service import RetrievalCacheService
 from app.services.llm_quota_service import LLMQuotaService
 from app.services.observability_service import ObservabilityService
 from app.services.preference_service import PreferenceService
+from app.services.rate_limit_service import RateLimitService
 
 def get_vector_store():
     return QdrantVectorStore(embedding_dimension = 384)
@@ -17,6 +18,7 @@ bm25_index_service = BM25IndexService()
 retrieval_cache_service = RetrievalCacheService()
 llm_quota_service = LLMQuotaService()
 observability_service = ObservabilityService()
+rate_limit_service = RateLimitService()
 
 def get_session_state_service():
     return session_state_service
@@ -38,3 +40,6 @@ def get_observability_service():
 
 def get_preference_service(db=Depends(get_db)):
     return PreferenceService(db=db)
+
+def get_rate_limit_service():
+    return rate_limit_service
