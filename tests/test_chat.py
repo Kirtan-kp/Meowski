@@ -28,7 +28,7 @@ def test_chat_response_includes_sources():
     client = TestClient(app)
 
     response = client.post(
-        "/chat",
+        "/api/v1/chat",
         json={
             "message": "What project uses Qdrant?",
             "session_id": "session_1",
@@ -72,7 +72,7 @@ def test_chat_response_handles_empty_sources():
     client = TestClient(app)
 
     response = client.post(
-        "/chat",
+        "/api/v1/chat",
         json={
             "message": "What information do you have?",
             "session_id": "session_1",

@@ -16,6 +16,7 @@ from app.services.cleanup_service import CleanupService
 from app.api.dependencies import get_vector_store,get_session_state_service,get_bm25_index_service,get_retrieval_cache_service
 from app.api.routes.metrics import router as metrics_router
 from app.api.routes.preferences import router as preferences_router
+from app.api.routes.health import router as health_router
 
 setup_logging()
 
@@ -57,15 +58,11 @@ init_db()
 app.middleware("http")(request_logging_middleware)
 app.middleware("http")(rate_limit_middleware)
 
-app.include_router(chat_router)
-app.include_router(upload_router)
-app.include_router(session_router)
-app.include_router(metrics_router)
-app.include_router(preferences_router)
+API_PREFIX = "/api/v1"
 
-@app.get("/health", response_model = HealthResponse)
-def health():
-    return {
-        "status" : "ok",
-        "environment" : settings.app_env
-    }
+app.include_router(chat_router , prefix=API_PREFIX)
+app.include_router(upload_router , prefix=API_PREFIX)
+app.include_router(session_router , prefix=API_PREFIX)
+app.include_router(metrics_router , prefix=API_PREFIX)
+app.include_router(preferences_router , prefix=API_PREFIX)
+app.include_router(health_router , prefix=API_PREFIX)

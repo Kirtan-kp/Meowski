@@ -59,7 +59,7 @@ client = TestClient(app)
 
 def test_upload_txt_file(upload_service_override):
     response = client.post(
-        "/upload",
+        "/api/v1/documents",
         files={
             "file": (
                 "cat_test.txt",

@@ -6,7 +6,7 @@ from app.vectorstore.qdrant_store import QdrantVectorStore
 from datetime import datetime, timedelta, timezone
 from app.db.models import FileRecord
 import hashlib
-from sqlalchemy import select
+from sqlalchemy import select,delete
 from app.ingestion.validators import validate_file, MAX_FILE_SIZE
 from app.services.bm25_index_service import BM25IndexService
 
@@ -77,3 +77,70 @@ class UploadService:
         finally:
             if os.path.exists(temp_path):
                 os.remove(temp_path)
+
+    def list_documents(
+        self,
+        *,
+        user_id: str,
+        session_id: str,
+    ):
+        self.session_service.get_session(
+            session_id=session_id,
+            user_id=user_id,
+        )
+
+        return list(
+            self.db.execute(
+                select(FileRecord)
+                .where(
+                    FileRecord.user_id == user_id,
+                    FileRecord.session_id == session_id,
+                    FileRecord.scope == "session",
+                    FileRecord.status == "ready",
+                )
+                .order_by(FileRecord.created_at.desc())
+            ).scalars().all()
+        )
+
+    def delete_document(
+        self,
+        *,
+        document_id: str,
+        user_id: str,
+        session_id: str,
+    ) -> bool:
+
+        self.session_service.get_session(
+            session_id=session_id,
+            user_id=user_id,
+        )
+
+        document = self.db.execute(
+            select(FileRecord).where(
+                FileRecord.id == document_id,
+                FileRecord.user_id == user_id,
+                FileRecord.session_id == session_id,
+                FileRecord.scope == "session",
+                FileRecord.status == "ready",
+            )
+        ).scalar_one_or_none()
+
+        if document is None:
+            return False
+
+        self.vector_store.delete_by_file_id(document.id)
+
+        document.status = "deleted"
+
+        self.db.commit()
+
+        if self.bm25_index_service is not None:
+            self.bm25_index_service.invalidate_session(
+                user_id=user_id,
+                session_id=session_id,
+            )
+
+        if self.retrieval_cache_service is not None:
+            self.retrieval_cache_service.invalidate()
+
+        return True
