@@ -155,58 +155,19 @@ def test_chat_service_passes_user_and_session_to_graph():
 
     assert config["configurable"]["thread_id"] == "user_123:session_123"
 
-def test_chat_service_uses_llm_factory(monkeypatch):
-
-    class FakeLLM(BaseLLM):
-
-        @property
-        def llm(self):
-            return "fake_langchain_llm"
-
-        async def generate(self, prompt: str) -> str:
-            return "fake response"
-
-    fake_llm = FakeLLM()
-
-    def fake_create_llm():
-        return fake_llm
-
-    def fake_create_retrieval_pipeline(**kwargs):
-        assert kwargs["llm"] == "fake_langchain_llm"
-        return "fake_retriever"
-
-    def fake_create_rag_graph(**kwargs):
-        assert kwargs["retriever"] == "fake_retriever"
-        assert kwargs["llm"] == "fake_langchain_llm"
-        return "fake_graph"
-
-    monkeypatch.setattr(
-        "app.services.chat_service.create_llm",
-        fake_create_llm,
-    )
-
-    monkeypatch.setattr(
-        "app.services.chat_service.create_retrieval_pipeline",
-        fake_create_retrieval_pipeline,
-    )
-
-    monkeypatch.setattr(
-        "app.services.chat_service.create_rag_graph",
-        fake_create_rag_graph,
-    )
-
+def test_chat_service_uses_shared_rag_graph():
     session_service = FakeSessionService()
+    preference_service = FakePreferenceService()
+
+    fake_graph = object()
 
     service = ChatService(
-        vector_store="fake_vector_store",
         session_service=session_service,
-        bm25_index_service=None,
-        preference_service=FakePreferenceService()
+        preference_service=preference_service,
+        rag_graph=fake_graph,
     )
 
-    assert service.llm is fake_llm
-    assert service.retriever == "fake_retriever"
-    assert service.rag_graph == "fake_graph"
+    assert service.rag_graph is fake_graph
 
 def test_chat_service_passes_request_id_to_graph():
 

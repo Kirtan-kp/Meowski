@@ -14,6 +14,7 @@ class RuntimeFilteredEnsembleRetriever(BaseRetriever):
     bm25_retriever : object
     weights : list[float]
     candidate_limit: int = 20
+    default_filter: object = None
 
     def _matches_filter(self , document , filter):
         if filter is None:
@@ -43,6 +44,9 @@ class RuntimeFilteredEnsembleRetriever(BaseRetriever):
         return True
 
     def _get_relevant_documents(self , query , * , run_manager , filter = None):
+
+        if filter is None:
+            filter = self.default_filter
 
         vector_documents = self.vector_retriever.invoke(query , filter = filter)
 
@@ -132,7 +136,7 @@ def create_retrieval_pipeline(vector_store , llm , k: int = 10 , top_n: int = 3 
         candidate_limit = k * 2
 
     hybrid_retriever = RuntimeFilteredEnsembleRetriever(vector_retriever = vector_retriever , bm25_retriever = bm25_retriever , 
-                                                    weights = [0.5, 0.5] , candidate_limit = candidate_limit)
+                                                    weights = [0.5, 0.5] , candidate_limit = candidate_limit , default_filter = filter)
 
     multi_query_retriever = create_multi_query_retriever(retriever = hybrid_retriever , llm = llm)
 

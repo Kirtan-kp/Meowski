@@ -14,8 +14,8 @@ def test_build_context_adds_source_markers():
     ]
 
     context = build_context(documents)
-    assert "[Source 1]" in context
-    assert "[Source 2]" in context
+    assert "【Source 1】" in context
+    assert "【Source 2】" in context
     assert "Kirtan built a RAG chatbot." in context
     assert "The project uses Qdrant." in context
 
@@ -50,9 +50,9 @@ def test_build_context_skips_empty_content():
 
     context = build_context(documents)
 
-    assert "[Source 1]" in context
+    assert "【Source 1】" in context
     assert "Valid document." in context
-    assert context.count("[Source") == 1
+    assert context.count("【Source】") == 1
 
 def test_build_context_empty_documents():
 

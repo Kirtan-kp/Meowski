@@ -1,15 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
 from app.schemas.chat import ChatRequest,ChatResponse
 from app.services.chat_service import ChatService
-from app.api.dependencies import get_vector_store,get_session_service,get_bm25_index_service
 from app.llm.exceptions import LLMTimeoutError,LLMRateLimitError,LLMProviderError,LLMQuotaExceededError,LLMProviderDisabledError,LLMConcurrencyLimitError
-from app.api.dependencies import get_preference_service, get_rate_limit_service
 from app.core.config import settings
+from app.api.dependencies import get_chat_service, get_rate_limit_service
 
 router = APIRouter()
-def get_chat_service(vector_store = Depends(get_vector_store) , session_service = Depends(get_session_service) ,
-                    bm25_index_service = Depends(get_bm25_index_service) , preference_service=Depends(get_preference_service)):
-    return ChatService(vector_store , session_service , bm25_index_service , preference_service)
 
 @router.post("/chat", response_model = ChatResponse)
 def chat(request : ChatRequest , http_request : Request , chat_service : ChatService = Depends(get_chat_service), rate_limits = Depends(get_rate_limit_service)):

@@ -1,5 +1,5 @@
 from langchain_core.runnables import Runnable
-
+from app.llm.exceptions import LLMQuotaExceededError
 from app.llm.exceptions import LLMError
 from app.services.provider_circuit_breaker import (
     ProviderCircuitBreaker,
@@ -27,6 +27,8 @@ class ProviderRouter(Runnable):
                 result = provider.invoke(input, config=config, **kwargs)
                 self.breaker.record_success(provider_name)
                 return result
+            except LLMQuotaExceededError:
+                raise
             except Exception as exc:
                 self.breaker.record_failure(provider_name)
                 last_error = exc
@@ -48,6 +50,8 @@ class ProviderRouter(Runnable):
                 result = await provider.ainvoke(input, config=config, **kwargs)
                 self.breaker.record_success(provider_name)
                 return result
+            except LLMQuotaExceededError:
+                raise
             except Exception as exc:
                 self.breaker.record_failure(provider_name)
                 last_error = exc

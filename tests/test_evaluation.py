@@ -1,9 +1,10 @@
 from langchain_core.documents import Document
 
-from scripts.run_retrieval_evaluation import (
+from app.evaluation.retrieval_metrics import (
     calculate_recall,
     calculate_precision,
     calculate_mrr,
+    calculate_hit_rate
 )
 
 
@@ -62,3 +63,34 @@ def test_calculate_mrr_when_no_relevant_document_is_retrieved():
     relevant = [0, 2]
 
     assert calculate_mrr(retrieved, relevant) == 0.0
+
+def test_calculate_hit_rate():
+
+    retrieved = make_documents([0, 1, 2])
+
+    relevant = [2, 5]
+
+    assert calculate_hit_rate(
+        retrieved,
+        relevant
+    ) == 1.0
+
+def test_calculate_hit_rate_when_no_relevant_document_is_retrieved():
+
+    retrieved = make_documents([0, 1, 2])
+
+    relevant = [5, 6]
+
+    assert calculate_hit_rate(
+        retrieved,
+        relevant
+    ) == 0.0
+
+def test_calculate_hit_rate_with_no_relevant_chunks():
+
+    retrieved = make_documents([0, 1])
+
+    assert calculate_hit_rate(
+        retrieved,
+        []
+    ) == 0.0

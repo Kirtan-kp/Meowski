@@ -10,8 +10,10 @@ from app.services.observability_service import ObservabilityService
 from app.services.preference_service import PreferenceService
 from app.services.rate_limit_service import RateLimitService
 
+vector_store = QdrantVectorStore(embedding_dimension = 384)
+
 def get_vector_store():
-    return QdrantVectorStore(embedding_dimension = 384)
+    return vector_store
 
 session_state_service = SessionStateService()
 bm25_index_service = BM25IndexService()
@@ -19,6 +21,37 @@ retrieval_cache_service = RetrievalCacheService()
 llm_quota_service = LLMQuotaService()
 observability_service = ObservabilityService()
 rate_limit_service = RateLimitService()
+
+llm_service = None
+rag_graph = None
+
+def get_rag_graph():
+    global llm_service, rag_graph
+
+    if rag_graph is None:
+        from app.llm.factory import create_llm
+        from app.retrieval.pipeline import create_retrieval_pipeline
+        from app.graph.graph import create_rag_graph
+        from app.rag.prompt import RAG_PROMPT
+
+        llm_service = create_llm()
+
+        retrieval_pipeline = create_retrieval_pipeline(
+            vector_store=vector_store,
+            llm=llm_service.llm,
+            k=10,
+            top_n=3,
+            search_type="mmr",
+            bm25_index_service=bm25_index_service,
+        )
+
+        rag_graph = create_rag_graph(
+            retriever=retrieval_pipeline,
+            llm=llm_service.llm,
+            prompt=RAG_PROMPT,
+        )
+
+    return rag_graph
 
 def get_session_state_service():
     return session_state_service
@@ -43,3 +76,15 @@ def get_preference_service(db=Depends(get_db)):
 
 def get_rate_limit_service():
     return rate_limit_service
+
+def get_chat_service(
+    session_service: SessionService = Depends(get_session_service),
+    preference_service: PreferenceService = Depends(get_preference_service),
+):
+    from app.services.chat_service import ChatService
+
+    return ChatService(
+        session_service=session_service,
+        preference_service=preference_service,
+        rag_graph=get_rag_graph(),
+    )

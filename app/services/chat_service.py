@@ -1,15 +1,9 @@
 import logging
-from app.vectorstore.qdrant_store import QdrantVectorStore
-from app.retrieval.pipeline import create_retrieval_pipeline
-from app.llm.factory import create_llm
-from app.rag.prompt import RAG_PROMPT
 from app.rag.response import build_rag_response
-from app.graph.graph import create_rag_graph
 from app.services.session_service import SessionService
 from langchain_core.messages import HumanMessage, AIMessage
 from app.schemas.retrieval import RetrievalResponse
 from app.llm.exceptions import LLMError,LLMProviderError,LLMRateLimitError,LLMTimeoutError
-from app.services.bm25_index_service import BM25IndexService
 from app.services.llm_quota_service import LLMQuotaService
 from app.llm.guarded import QuotaGuardedLLM, set_llm_request_context, reset_llm_request_context
 from app.services.preference_service import PreferenceService
@@ -18,15 +12,11 @@ logger = logging.getLogger(__name__)
 
 class ChatService:
 
-    def __init__(self , vector_store , session_service : SessionService , bm25_index_service : BM25IndexService , preference_service : PreferenceService):
+    def __init__(self , session_service : SessionService , preference_service : PreferenceService , rag_graph):
 
-        self.vector_store = vector_store
-        self.llm = create_llm()
-        self.retriever = create_retrieval_pipeline(vector_store = self.vector_store , llm = self.llm.llm , k = 10 , 
-                                      top_n = 3 , search_type = "mmr" , bm25_index_service = bm25_index_service)
-        self.rag_graph = create_rag_graph(retriever = self.retriever , llm = self.llm.llm , prompt = RAG_PROMPT)
         self.session_service = session_service
         self.preference_service = preference_service
+        self.rag_graph = rag_graph
 
     def generate_response(self , message : str , session_id : str , user_id : str , request_id: str) -> RetrievalResponse:
 

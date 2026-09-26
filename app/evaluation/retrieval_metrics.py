@@ -32,3 +32,17 @@ def calculate_mrr(retrieved, relevant):
             return 1.0 / rank
 
     return 0.0
+
+def calculate_hit_rate(retrieved_documents, relevant_chunk_indices):
+
+    if not relevant_chunk_indices:
+        return 0.0
+
+    retrieved_indices = {
+        document.metadata.get("chunk_index")
+        for document in retrieved_documents
+    }
+
+    return float(
+        bool(retrieved_indices.intersection(relevant_chunk_indices))
+    )

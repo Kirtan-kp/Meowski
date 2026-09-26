@@ -25,7 +25,10 @@ class IngestionService:
 
     def _load_documents(self):
         extension = validate_file(self.file_path, self.file_size)
-        loader = self._parsers[extension](self.file_path)
+        if extension == ".txt":
+            loader = self._parsers[extension](self.file_path, encoding="utf-8")
+        else:
+            loader = self._parsers[extension](self.file_path)
         return loader.load()
 
     def ingest(self):
@@ -55,12 +58,13 @@ class IngestionService:
             created_at = datetime.now(timezone.utc)
             expires_at = created_at + timedelta(hours=24) if self.scope == "session" else None
 
-            for chunk in chunks:
+            for index,chunk in enumerate(chunks):
                 chunk.metadata.update({
                     "file_id": self.file_id,
                     "file_hash": self.file_hash,
                     "scope": self.scope,
                     "created_at": created_at.isoformat(),
+                    "chunk_index": index
                 })
                 if self.scope == "session":
                     chunk.metadata["user_id"] = self.user_id
