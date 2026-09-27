@@ -52,7 +52,7 @@ def test_build_context_skips_empty_content():
 
     assert "【Source 1】" in context
     assert "Valid document." in context
-    assert context.count("【Source】") == 1
+    assert context.count("【Source 1】") == 1
 
 def test_build_context_empty_documents():
 
