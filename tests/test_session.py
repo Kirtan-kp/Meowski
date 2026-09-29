@@ -255,7 +255,7 @@ def test_expired_session_is_rejected_and_state_deleted():
     assert session.status == "expired"
     assert state_service.get_state(session.id) is None
 
-def test_saving_state_uses_remaining_session_ttl():
+def test_saving_state_refreshes_session_ttl():
     db = FakeDB()
     state_service = FakeStateService()
 
@@ -266,7 +266,9 @@ def test_saving_state_uses_remaining_session_ttl():
 
     session = service.create_session("user_1")
 
-    session.expires_at = datetime.now(timezone.utc) + timedelta(seconds=300)
+    session.expires_at = (
+        datetime.now(timezone.utc) + timedelta(seconds=300)
+    )
 
     service.save_state(
         session_id=session.id,
@@ -274,4 +276,8 @@ def test_saving_state_uses_remaining_session_ttl():
         state={"chat_history": []}
     )
 
-    assert 1 <= state_service.ttls[session.id] <= 300
+    assert (
+        settings.session_ttl_seconds - 5
+        <= state_service.ttls[session.id]
+        <= settings.session_ttl_seconds
+    )

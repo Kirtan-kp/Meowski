@@ -1,11 +1,18 @@
 import io
 from unittest.mock import patch
 from app.services.upload_service import UploadService
+from datetime import datetime, timedelta, timezone
+
+class FakeSession:
+
+    def __init__(self, session_id):
+        self.id = session_id
+        self.expires_at = datetime.now(timezone.utc) + timedelta(hours=2)
 
 class FakeSessionService:
 
     def get_session(self, session_id, user_id):
-        return True
+        return FakeSession(session_id)
 
 class FakeResult:
 
