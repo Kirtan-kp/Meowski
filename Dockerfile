@@ -4,6 +4,7 @@ WORKDIR /app
 
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
+ENV PYTHONUNBUFFERED=1
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends libpq5 \
@@ -20,6 +21,7 @@ RUN pip install --no-cache-dir -r requirements-runtime.txt
 COPY app ./app
 COPY data ./data
 COPY scripts ./scripts
+COPY pytest.ini .
 
 EXPOSE 8000
 

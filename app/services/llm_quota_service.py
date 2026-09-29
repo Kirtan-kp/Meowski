@@ -102,11 +102,15 @@ class LLMQuotaService:
         scope = hashlib.sha256(provider.encode("utf-8")).hexdigest()[:16]
         user_key = hashlib.sha256(user_id.encode("utf-8")).hexdigest()[:24]
         session_key = hashlib.sha256(session_id.encode("utf-8")).hexdigest()[:24]
+        # Daily and rolling application budgets are intentionally global across
+        # providers so a fallback provider cannot multiply the application's
+        # external inference allowance. Provider-specific accounting remains
+        # separate for provider caps and diagnostics.
         return (
-            f"quota:llm:daily:{scope}:{today}",
+            f"quota:llm:daily:{today}",
             f"quota:llm:provider:{scope}:{today}",
-            f"quota:llm:session:{scope}:{user_key}:{session_key}:{today}",
-            f"quota:llm:rolling:{scope}",
+            f"quota:llm:session:{user_key}:{session_key}:{today}",
+            "quota:llm:rolling",
         )
 
     def acquire_concurrency(self, provider: str | None = None) -> str:

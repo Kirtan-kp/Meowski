@@ -153,7 +153,7 @@ def test_chat_service_passes_user_and_session_to_graph():
     assert state["user_id"] == "user_123"
     assert state["session_id"] == "session_123"
 
-    assert config["configurable"]["thread_id"] == "user_123:session_123"
+    assert config == {}
 
 def test_chat_service_uses_shared_rag_graph():
     session_service = FakeSessionService()

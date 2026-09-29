@@ -21,10 +21,20 @@ class OllamaRunnable(Runnable):
                         "model": settings.ollama_model,
                         "messages": [{"role": "user", "content": self._prompt(input)}],
                         "stream": False,
+                        "options": {"num_predict": settings.llm_max_output_tokens},
                     },
                 )
                 response.raise_for_status()
                 data = response.json()
+                from app.api.dependencies import get_observability_service
+                get_observability_service().record_llm_usage(
+                    provider="ollama",
+                    input_tokens=data.get("prompt_eval_count"),
+                    output_tokens=data.get("eval_count"),
+                    total_tokens=(data.get("prompt_eval_count", 0) + data.get("eval_count", 0))
+                    if data.get("prompt_eval_count") is not None and data.get("eval_count") is not None
+                    else None,
+                )
         except httpx.TimeoutException as exc:
             raise LLMTimeoutError("LLM provider request timed out") from exc
         except Exception as exc:
@@ -41,10 +51,20 @@ class OllamaRunnable(Runnable):
                         "model": settings.ollama_model,
                         "messages": [{"role": "user", "content": self._prompt(input)}],
                         "stream": False,
+                        "options": {"num_predict": settings.llm_max_output_tokens},
                     },
                 )
                 response.raise_for_status()
                 data = response.json()
+                from app.api.dependencies import get_observability_service
+                get_observability_service().record_llm_usage(
+                    provider="ollama",
+                    input_tokens=data.get("prompt_eval_count"),
+                    output_tokens=data.get("eval_count"),
+                    total_tokens=(data.get("prompt_eval_count", 0) + data.get("eval_count", 0))
+                    if data.get("prompt_eval_count") is not None and data.get("eval_count") is not None
+                    else None,
+                )
         except httpx.TimeoutException as exc:
             raise LLMTimeoutError("LLM provider request timed out") from exc
         except Exception as exc:

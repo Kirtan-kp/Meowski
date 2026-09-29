@@ -54,10 +54,26 @@ class CleanupService:
         ).scalars().all()
 
         expired_session_ids = []
+        changed = False
 
         for session in expired_sessions:
+            file_records = self.db.execute(
+                select(FileRecord).where(
+                    FileRecord.user_id == session.user_id,
+                    FileRecord.session_id == session.id,
+                    FileRecord.scope == "session",
+                    FileRecord.status.in_(["processing", "ready"]),
+                )
+            ).scalars().all()
+
+            for file_record in file_records:
+                self.vector_store.delete_by_file_id(file_record.id)
+                file_record.status = "expired"
+                changed = True
+
             session.status = "expired"
             expired_session_ids.append(session.id)
+            changed = True
 
             if self.state_service:
                 self.state_service.delete_state(session.id)
@@ -70,9 +86,10 @@ class CleanupService:
             if self.retrieval_cache_service:
                 self.retrieval_cache_service.invalidate()
 
-        if expired_sessions:
+        if changed:
             self.db.commit()
-
+            if self.retrieval_cache_service:
+                self.retrieval_cache_service.invalidate()
         return expired_session_ids
 
     def cleanup(self):

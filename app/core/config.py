@@ -51,6 +51,8 @@ class Settings(BaseSettings):
     session_rate_limit_window_seconds: int = 60
 
     cleanup_interval_seconds: int = 3600
+    session_ttl_seconds: int = 7200
+    max_chat_history_messages: int = 20
 
     metrics_token: str = ""
     max_upload_pages: int = 50

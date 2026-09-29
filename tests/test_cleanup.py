@@ -112,6 +112,7 @@ def test_cleanup_expired_files_does_not_invalidate_when_no_files_expire():
 def test_cleanup_expired_sessions():
     expired_session = SimpleNamespace(
         id="session-1",
+        user_id="user-1",
         status="active",
         expires_at=datetime.now(timezone.utc) - timedelta(hours=1),
     )
@@ -140,6 +141,35 @@ def test_cleanup_expired_sessions():
     assert expired_session.status == "expired"
     assert state_service.deleted_session_ids == ["session-1"]
     assert db.committed is True
+
+def test_cleanup_expired_session_also_removes_session_files():
+    expired_session = SimpleNamespace(
+        id="session-1",
+        user_id="user-1",
+        status="active",
+        expires_at=datetime.now(timezone.utc) - timedelta(hours=1),
+    )
+    expired_file = SimpleNamespace(
+        id="file-1",
+        user_id="user-1",
+        session_id="session-1",
+        scope="session",
+        status="ready",
+        expires_at=datetime.now(timezone.utc) + timedelta(hours=1),
+    )
+
+    db = FakeDB(files=[expired_file], sessions=[expired_session])
+    vector_store = FakeVectorStore()
+    state_service = FakeStateService()
+
+    service = CleanupService(db=db, vector_store=vector_store, state_service=state_service)
+    result = service.cleanup_expired_sessions()
+
+    assert result == ["session-1"]
+    assert expired_file.status == "expired"
+    assert vector_store.deleted_file_ids == ["file-1"]
+    assert state_service.deleted_session_ids == ["session-1"]
+
 
 def test_cleanup_expired_file_removes_qdrant_vectors():
     from app.vectorstore.qdrant_store import QdrantVectorStore

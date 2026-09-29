@@ -153,6 +153,21 @@ class ObservabilityService:
         if cache_hit:
             self.increment("llm_cache_hits")
 
+    def record_llm_usage(
+        self,
+        *,
+        provider: str,
+        input_tokens: int | None = None,
+        output_tokens: int | None = None,
+        total_tokens: int | None = None,
+    ):
+        if input_tokens is not None:
+            self.increment(f"llm_provider:{provider}:actual_input_tokens", int(input_tokens))
+        if output_tokens is not None:
+            self.increment(f"llm_provider:{provider}:actual_output_tokens", int(output_tokens))
+        if total_tokens is not None:
+            self.increment(f"llm_provider:{provider}:actual_total_tokens", int(total_tokens))
+
     def record_quota(
         self,
         outcome: str,

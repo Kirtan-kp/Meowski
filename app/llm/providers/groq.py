@@ -9,7 +9,8 @@ class GroqLLM(BaseLLM):
 
         self.api_key = settings.llm_api_key
         self._llm = ChatGroq(api_key = self.api_key , model = settings.llm_model , 
-                            timeout = settings.llm_timeout_seconds , max_retries = settings.llm_max_retries)
+                            timeout = settings.llm_timeout_seconds , max_retries = settings.llm_max_retries,
+                            max_tokens = settings.llm_max_output_tokens)
 
     @property
     def llm(self):

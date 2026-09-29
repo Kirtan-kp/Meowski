@@ -46,7 +46,7 @@ class ChatService:
             ]
             result = self.rag_graph.invoke({"question" : message ,"user_id" : user_id , "session_id" : session_id , "request_id": request_id,
                                              "retry_count" : 0 , "chat_history": chat_history , "preferences": preference_data} , 
-                                        config = {"configurable" : {"thread_id" : f"{user_id}:{session_id}"}})
+                                        config = {})
             logger.info(
                 "request_id=%s stage=chat_complete session_id=%s",
                 request_id,

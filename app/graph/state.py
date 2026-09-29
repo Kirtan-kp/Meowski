@@ -1,6 +1,5 @@
-from typing import TypedDict , Annotated
+from typing import TypedDict
 from langchain_core.messages import BaseMessage
-from langgraph.graph.message import add_messages  #add operator , only to add new messages and not replace
 
 class RAGState(TypedDict , total = False):
 
@@ -16,7 +15,7 @@ class RAGState(TypedDict , total = False):
 
     rewritten_question : str
 
-    chat_history : Annotated[list[BaseMessage] , add_messages]
+    chat_history : list[BaseMessage]
 
     user_id: str
 

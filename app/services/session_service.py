@@ -1,10 +1,10 @@
 from datetime import datetime, timedelta, timezone
 import uuid
-from app.db.models import SessionRecord
+from app.db.models import SessionRecord, FileRecord
 from app.services.session_state_service import SessionStateService
+from app.core.config import settings
 
 class SessionService:
-    SESSION_TTL_HOURS = 24
 
     def __init__(self , db , state_service : SessionStateService):
         self.db = db
@@ -13,14 +13,14 @@ class SessionService:
     def create_session(self , user_id : str):
         session_id = str(uuid.uuid4())
         created_at = datetime.now(timezone.utc)
-        expires_at = created_at + timedelta(hours=self.SESSION_TTL_HOURS)
+        expires_at = created_at + timedelta(seconds=settings.session_ttl_seconds)
 
         session = SessionRecord(id = session_id , user_id = user_id , status = "active",
             created_at = created_at , expires_at = expires_at)
 
         self.db.add(session)
         self.db.commit()
-        self.state_service.save_state(session_id = session_id , state = {} , ttl_seconds = self.SESSION_TTL_HOURS * 60 * 60)
+        self.state_service.save_state(session_id = session_id , state = {} , ttl_seconds = settings.session_ttl_seconds)
 
         return session
 
@@ -43,13 +43,25 @@ class SessionService:
 
             raise ValueError("Session has expired")
 
+        session.expires_at = now + timedelta(seconds=settings.session_ttl_seconds)
+        self.db.query(FileRecord).filter(
+            FileRecord.user_id == user_id,
+            FileRecord.session_id == session_id,
+            FileRecord.scope == "session",
+            FileRecord.status.in_(["processing", "ready"]),
+        ).update(
+            {FileRecord.expires_at: session.expires_at},
+            synchronize_session=False,
+        )
+        self.db.commit()
+        self.state_service.refresh_ttl(session_id, settings.session_ttl_seconds)
         return session
 
     def save_state(self , session_id : str , user_id : str , state : dict):
 
         session = self.get_session(session_id = session_id , user_id = user_id)
         remaining_seconds = max(1 , int((session.expires_at - datetime.now(timezone.utc)).total_seconds()))
-        self.state_service.save_state(session_id = session_id , state = state , ttl_seconds = remaining_seconds)
+        self.state_service.save_state(session_id = session_id , state = state , ttl_seconds = min(remaining_seconds, settings.session_ttl_seconds))
 
     def get_state(self , session_id : str , user_id : str):
 

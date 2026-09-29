@@ -1,6 +1,7 @@
 import pytest
 from app.services.session_service import SessionService
 from datetime import datetime , timezone , timedelta
+from app.core.config import settings
 
 class FakeDB:
     def __init__(self):
@@ -19,6 +20,7 @@ class FakeDB:
 class FakeQuery:
     def __init__(self, records):
         self.records = records
+        self.conditions = []
 
     def filter(self, *conditions):
         self.conditions = conditions
@@ -27,18 +29,31 @@ class FakeQuery:
     def first(self):
         for record in self.records:
             matches = True
-
             for condition in self.conditions:
                 if condition.left.key == "id":
                     matches &= record.id == condition.right.value
-
                 elif condition.left.key == "user_id":
                     matches &= record.user_id == condition.right.value
-
             if matches:
                 return record
-
         return None
+
+    def update(self, values, synchronize_session=False):
+        updated = 0
+        for record in self.records:
+            matches = True
+            for condition in self.conditions:
+                key = getattr(condition.left, "key", None)
+                expected = getattr(getattr(condition, "right", None), "value", None)
+                if expected is None:
+                    continue
+                if hasattr(record, key):
+                    matches &= getattr(record, key) == expected
+            if matches:
+                for column, value in values.items():
+                    setattr(record, column.key, value)
+                updated += 1
+        return updated
 
 
 class FakeStateService:
@@ -56,6 +71,10 @@ class FakeStateService:
     def delete_state(self, session_id):
         self.states.pop(session_id, None)
         self.ttls.pop(session_id, None)
+
+    def refresh_ttl(self, session_id, ttl_seconds):
+        if session_id in self.states:
+            self.ttls[session_id] = ttl_seconds
 
 
 def test_create_session():
@@ -195,7 +214,7 @@ def test_session_state_persists_across_service_instances():
 
     assert recovered_state == state
 
-def test_session_state_gets_24_hour_ttl():
+def test_session_state_uses_configured_ttl():
     db = FakeDB()
     state_service = FakeStateService()
 
@@ -206,7 +225,7 @@ def test_session_state_gets_24_hour_ttl():
 
     session = service.create_session("user_1")
 
-    assert state_service.ttls[session.id] == 24 * 60 * 60
+    assert state_service.ttls[session.id] == settings.session_ttl_seconds
 
 def test_expired_session_is_rejected_and_state_deleted():
     db = FakeDB()

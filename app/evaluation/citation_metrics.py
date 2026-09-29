@@ -1,6 +1,6 @@
 import re
 
-SOURCE_PATTERN = re.compile(r"【Source\s+(\d+)】")
+SOURCE_PATTERN = re.compile(r"\[Source\s+(\d+)\]")
 
 def extract_citations(answer: str) -> list[int]:
     return [

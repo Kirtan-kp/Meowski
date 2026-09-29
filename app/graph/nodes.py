@@ -4,6 +4,7 @@ from langchain_core.messages import HumanMessage, AIMessage
 from qdrant_client.models import Filter, FieldCondition, MatchValue
 from app.rag.context import build_context
 from app.services.llm_cache_service import LLMCacheService
+from app.core.config import settings
 import logging
 import time
 from app.api.dependencies import get_observability_service
@@ -162,6 +163,12 @@ def generate_node(state : RAGState , prompt , llm) -> dict:
 
     if cached_answer is not None:
         answer = cached_answer
+        get_observability_service().record_llm(
+            provider=getattr(llm, "provider_name", "cache"),
+            model=getattr(llm, "model", "cache"),
+            estimated_tokens=0,
+            cache_hit=True,
+        )
         process_time = time.perf_counter() - start_time
 
         logger.info(
@@ -209,8 +216,14 @@ def generate_node(state : RAGState , prompt , llm) -> dict:
             answer=answer
         )
         
-    return {"context" : context , "answer" : answer , "documents" : state["documents"] , 
-            "chat_history": [HumanMessage(content = state["question"]) , AIMessage(content = answer)]}
+    updated_history = list(chat_history) + [
+        HumanMessage(content=state["question"]),
+        AIMessage(content=answer),
+    ]
+    updated_history = updated_history[-settings.max_chat_history_messages:]
+
+    return {"context": context, "answer": answer, "documents": state["documents"],
+            "chat_history": updated_history}
 
 def rewrite_query_node(state : RAGState , llm) -> dict: 
 

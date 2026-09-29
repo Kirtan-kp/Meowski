@@ -14,8 +14,9 @@ def test_build_context_adds_source_markers():
     ]
 
     context = build_context(documents)
-    assert "【Source 1】" in context
-    assert "【Source 2】" in context
+    assert "[Source 1]" in context
+    assert "[Source 2]" in context
+    assert "Document: unknown" in context
     assert "Kirtan built a RAG chatbot." in context
     assert "The project uses Qdrant." in context
 
@@ -50,10 +51,27 @@ def test_build_context_skips_empty_content():
 
     context = build_context(documents)
 
-    assert "【Source 1】" in context
+    assert "[Source 1]" in context
     assert "Valid document." in context
-    assert context.count("【Source 1】") == 1
+    assert context.count("[Source 1]") == 1
 
 def test_build_context_empty_documents():
 
     assert build_context([]) == ""
+
+def test_build_context_includes_source_metadata():
+    context = build_context([
+        {
+            "page_content": "Qdrant is used for vector storage.",
+            "metadata": {
+                "source_filename": "portfolio.pdf",
+                "page": 2,
+                "section": "Architecture",
+                "chunk_index": 7,
+            },
+        }
+    ])
+    assert "Document: portfolio.pdf" in context
+    assert "Page: 3" in context
+    assert "Section: Architecture" in context
+    assert "Chunk: 7" in context

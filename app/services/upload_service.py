@@ -3,7 +3,7 @@ import tempfile
 import uuid
 from app.services.ingestion_service import IngestionService
 from app.vectorstore.qdrant_store import QdrantVectorStore
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from app.db.models import FileRecord
 import hashlib
 from sqlalchemy import select,delete
@@ -22,7 +22,7 @@ class UploadService:
 
     def upload(self , file , user_id : str , session_id : str):
 
-        self.session_service.get_session(session_id = session_id , user_id = user_id)
+        session = self.session_service.get_session(session_id = session_id , user_id = user_id)
         suffix = os.path.splitext(file.filename)[1].lower()
         file.file.seek(0)
         file_bytes = file.file.read(MAX_FILE_SIZE + 1)
@@ -41,7 +41,7 @@ class UploadService:
         
         file_id = str(uuid.uuid4())
         created_at = datetime.now(timezone.utc)
-        expires_at = created_at + timedelta(hours=24)
+        expires_at = session.expires_at
 
         file_record = FileRecord(id = file_id , user_id = user_id , session_id = session_id , filename = file.filename,
             file_hash = file_hash , scope = "session" , status = "processing" , created_at = created_at , expires_at = expires_at)
@@ -54,7 +54,10 @@ class UploadService:
             temp_path = temp_file.name
 
         try:
-            ingestion_service = IngestionService(temp_path , user_id = user_id , session_id = session_id , file_id = file_id , file_hash = file_hash)
+            ingestion_service = IngestionService(
+                temp_path, user_id=user_id, session_id=session_id, file_id=file_id,
+                file_hash=file_hash, source_filename=file.filename
+            )
             chunks = ingestion_service.ingest()
             self.vector_store.add_documents(chunks)
             file_record.status = "ready"

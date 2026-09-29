@@ -1,7 +1,6 @@
 from langchain_core.retrievers import BaseRetriever
 from app.retrieval.vector_retriever import create_vector_retriever
 from app.retrieval.bm25_retriever import create_bm25_retriever
-from app.retrieval.multi_query_retriever import create_multi_query_retriever
 from app.retrieval.reranker import create_reranker
 import hashlib
 import json
@@ -138,9 +137,9 @@ def create_retrieval_pipeline(vector_store , llm , k: int = 10 , top_n: int = 3 
     hybrid_retriever = RuntimeFilteredEnsembleRetriever(vector_retriever = vector_retriever , bm25_retriever = bm25_retriever , 
                                                     weights = [0.5, 0.5] , candidate_limit = candidate_limit , default_filter = filter)
 
-    multi_query_retriever = create_multi_query_retriever(retriever = hybrid_retriever , llm = llm)
-
-    reranker = create_reranker(retriever = multi_query_retriever , top_n = top_n)
+    # Query rewriting is performed by the graph only when the initial retrieval is weak.
+    # Keeping multi-query expansion out of the normal path avoids unnecessary LLM calls.
+    reranker = create_reranker(retriever = hybrid_retriever , top_n = top_n)
 
     retrieval_cache = RetrievalCacheService()
 

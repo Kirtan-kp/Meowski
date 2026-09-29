@@ -27,11 +27,16 @@ class ProviderRouter(Runnable):
                 result = provider.invoke(input, config=config, **kwargs)
                 self.breaker.record_success(provider_name)
                 return result
-            except LLMQuotaExceededError:
-                raise
+            except LLMQuotaExceededError as exc:
+                # A provider-specific quota can be exhausted while another
+                # zero-cost provider is still available. Try the next provider.
+                self.breaker.record_failure(provider_name)
+                last_error = exc
+                continue
             except Exception as exc:
                 self.breaker.record_failure(provider_name)
                 last_error = exc
+                continue
 
         if last_error is not None:
             raise last_error
@@ -50,11 +55,16 @@ class ProviderRouter(Runnable):
                 result = await provider.ainvoke(input, config=config, **kwargs)
                 self.breaker.record_success(provider_name)
                 return result
-            except LLMQuotaExceededError:
-                raise
+            except LLMQuotaExceededError as exc:
+                # A provider-specific quota can be exhausted while another
+                # zero-cost provider is still available. Try the next provider.
+                self.breaker.record_failure(provider_name)
+                last_error = exc
+                continue
             except Exception as exc:
                 self.breaker.record_failure(provider_name)
                 last_error = exc
+                continue
 
         if last_error is not None:
             raise last_error
