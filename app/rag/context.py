@@ -29,7 +29,7 @@ def build_context(documents: list[dict]) -> str:
         if chunk_index is not None:
             location.append(f"Chunk: {chunk_index}")
 
-        context_parts.append(f"[Source {source_number}]\n" + " | ".join(location) + f"{content}")
+        context_parts.append(f"[Source {source_number}]\n" + " | ".join(location) + f"\n{content}")
         source_number += 1
 
     return "\n\n".join(context_parts)

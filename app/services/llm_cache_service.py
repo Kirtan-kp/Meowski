@@ -17,6 +17,7 @@ class LLMCacheService:
         chat_history,
         user_id: str,
         session_id: str,
+        preferences=None,
     ) -> str:
 
         history = [
@@ -37,6 +38,9 @@ class LLMCacheService:
             "question": question,
             "context": context,
             "chat_history": history,
+            "preferences": sorted(
+                ((item["key"], item["value"]) for item in (preferences or [])),
+            ),
         }
 
         serialized = json.dumps(
@@ -58,6 +62,7 @@ class LLMCacheService:
         chat_history,
         user_id: str,
         session_id: str,
+        preferences=None,
     ):
 
         key = self._cache_key(
@@ -66,6 +71,7 @@ class LLMCacheService:
             chat_history=chat_history,
             user_id=user_id,
             session_id=session_id,
+            preferences=preferences,
         )
 
         return self.cache.get(key)
@@ -78,6 +84,7 @@ class LLMCacheService:
         user_id: str,
         session_id: str,
         answer: str,
+        preferences=None,
     ):
 
         key = self._cache_key(
@@ -86,6 +93,7 @@ class LLMCacheService:
             chat_history=chat_history,
             user_id=user_id,
             session_id=session_id,
+            preferences=preferences,
         )
 
         self.cache.set(
@@ -101,6 +109,7 @@ class LLMCacheService:
         chat_history,
         user_id: str,
         session_id: str,
+        preferences=None,
     ):
 
         key = self._cache_key(
@@ -109,6 +118,7 @@ class LLMCacheService:
             chat_history=chat_history,
             user_id=user_id,
             session_id=session_id,
+            preferences=preferences,
         )
 
         self.cache.delete(key)

@@ -1,5 +1,5 @@
 from langchain_core.runnables import Runnable
-from app.llm.exceptions import LLMQuotaExceededError
+from app.llm.exceptions import LLMQuotaExceededError, LLMConcurrencyLimitError
 from app.llm.exceptions import LLMError
 from app.services.provider_circuit_breaker import (
     ProviderCircuitBreaker,
@@ -27,10 +27,9 @@ class ProviderRouter(Runnable):
                 result = provider.invoke(input, config=config, **kwargs)
                 self.breaker.record_success(provider_name)
                 return result
-            except LLMQuotaExceededError as exc:
-                # A provider-specific quota can be exhausted while another
-                # zero-cost provider is still available. Try the next provider.
-                self.breaker.record_failure(provider_name)
+            except (LLMQuotaExceededError, LLMConcurrencyLimitError) as exc:
+                # Budget/capacity problems are not provider health problems, so
+                # they must not open the circuit. Try the next provider.
                 last_error = exc
                 continue
             except Exception as exc:
@@ -55,10 +54,9 @@ class ProviderRouter(Runnable):
                 result = await provider.ainvoke(input, config=config, **kwargs)
                 self.breaker.record_success(provider_name)
                 return result
-            except LLMQuotaExceededError as exc:
-                # A provider-specific quota can be exhausted while another
-                # zero-cost provider is still available. Try the next provider.
-                self.breaker.record_failure(provider_name)
+            except (LLMQuotaExceededError, LLMConcurrencyLimitError) as exc:
+                # Budget/capacity problems are not provider health problems, so
+                # they must not open the circuit. Try the next provider.
                 last_error = exc
                 continue
             except Exception as exc:

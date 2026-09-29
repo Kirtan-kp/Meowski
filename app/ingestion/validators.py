@@ -6,6 +6,10 @@ from pypdf import PdfReader
 
 from app.core.config import settings
 
+class FileTooLargeError(ValueError):
+    pass
+
+
 ALLOWED_EXTENSIONS = {".pdf", ".txt", ".docx"}
 MAX_FILE_SIZE = 10 * 1024 * 1024
 MAX_DOCX_UNCOMPRESSED_SIZE = 5 * 1024 * 1024
@@ -19,7 +23,7 @@ def validate_file(filename: str, file_size: int, file_bytes: bytes | None = None
         raise ValueError(f"Unsupported file type : {extension} , upload pdf txt docx file only")
 
     if file_size > MAX_FILE_SIZE:
-        raise ValueError("File size exceeds the 10 MB limit.")
+        raise FileTooLargeError("File size exceeds the 10 MB limit.")
 
     if file_bytes is None:
         return extension

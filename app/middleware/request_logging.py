@@ -6,6 +6,12 @@ from app.api.dependencies import get_observability_service
 
 logger = logging.getLogger(__name__)  #basically gets file name
 
+def _route_label(request : Request) -> str:
+    # Use the route template ("/api/v1/session/{session_id}") so unknown or
+    # parameterised paths cannot create unbounded metric keys in Redis.
+    route = request.scope.get("route")
+    return getattr(route, "path", None) or "unmatched"
+
 async def request_logging_middleware(request : Request , call_next):
 
     request_id = str(uuid.uuid4())
@@ -22,7 +28,7 @@ async def request_logging_middleware(request : Request , call_next):
 
         observability.record_request(
             request_id=request_id,
-            route=request.url.path,
+            route=_route_label(request),
             method=request.method,
             status_code=response.status_code,
             latency_ms=latency_ms,
@@ -55,7 +61,7 @@ async def request_logging_middleware(request : Request , call_next):
 
         observability.record_request(
             request_id=request_id,
-            route=request.url.path,
+            route=_route_label(request),
             method=request.method,
             status_code=500,
             latency_ms=latency_ms,

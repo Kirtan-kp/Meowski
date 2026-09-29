@@ -1,5 +1,11 @@
+import re
 from threading import Lock
 from langchain_community.retrievers import BM25Retriever
+
+
+def _tokenize(text: str) -> list[str]:
+    # Default BM25 tokenizer is text.split(): "Docker," != "docker". Lowercase and strip punctuation.
+    return re.findall(r"\w+", text.lower())
 
 
 class BM25IndexService:
@@ -38,7 +44,7 @@ class BM25IndexService:
             if not documents:
                 return None
 
-            retriever = BM25Retriever.from_documents(documents)
+            retriever = BM25Retriever.from_documents(documents, preprocess_func=_tokenize)
             retriever.k = k
 
             self._indexes[cache_key] = retriever

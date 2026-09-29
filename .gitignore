@@ -2,13 +2,7 @@ learn.txt
 cat_rag_project_specification.docx
 c_r_venv
 .env
-app/__init__.py
-app/api/__init__.py
-app/api/routes/__init__.py
-app/core/__init__.py
-tests/__init__.py
 qdrant_storage/
-app/retrieval/__init__.py
 sample.txt
 try.py
 cat_test.txt
@@ -18,7 +12,6 @@ docker_test_bom.txt
 oversized_test.txt
 security_test.txt
 session_private.txt
-data/
 cat_test.txt
 __pycache__/
 *.pyc

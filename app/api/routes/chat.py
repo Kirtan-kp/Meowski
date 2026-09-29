@@ -3,6 +3,7 @@ from app.schemas.chat import ChatRequest,ChatResponse
 from app.services.chat_service import ChatService
 from app.llm.exceptions import LLMTimeoutError,LLMRateLimitError,LLMProviderError,LLMQuotaExceededError,LLMProviderDisabledError,LLMConcurrencyLimitError
 from app.core.config import settings
+from app.services.session_service import SessionError, SessionNotFoundError
 from app.api.dependencies import get_chat_service, get_rate_limit_service
 
 router = APIRouter()
@@ -21,6 +22,13 @@ def chat(request : ChatRequest , http_request : Request , chat_service : ChatSer
         http_request.state.session_id = request.session_id
         response = chat_service.generate_response(message = request.message , session_id = request.session_id , user_id = request.user_id , 
                                                   request_id = http_request.state.request_id)
+    except SessionError as exc:
+        # Unknown session -> 404; inactive/expired -> 410 Gone (client should start a new one)
+        raise HTTPException(
+            status_code=404 if isinstance(exc, SessionNotFoundError) else 410,
+            detail=str(exc),
+        ) from exc
+
     except LLMTimeoutError as exc:
         raise HTTPException(
             status_code=504,

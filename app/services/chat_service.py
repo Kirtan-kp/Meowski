@@ -3,9 +3,8 @@ from app.rag.response import build_rag_response
 from app.services.session_service import SessionService
 from langchain_core.messages import HumanMessage, AIMessage
 from app.schemas.retrieval import RetrievalResponse
-from app.llm.exceptions import LLMError,LLMProviderError,LLMRateLimitError,LLMTimeoutError
-from app.services.llm_quota_service import LLMQuotaService
-from app.llm.guarded import QuotaGuardedLLM, set_llm_request_context, reset_llm_request_context
+from app.llm.exceptions import LLMError,LLMProviderError,LLMTimeoutError
+from app.llm.guarded import set_llm_request_context, reset_llm_request_context
 from app.services.preference_service import PreferenceService
 
 logger = logging.getLogger(__name__)

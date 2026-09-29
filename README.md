@@ -343,7 +343,7 @@ pytest -q
 
 ```bash
 git clone <your-repository-url>
-cd meowski-clean
+cd Meowski
 ```
 
 ### 2. Configure environment variables
@@ -405,7 +405,7 @@ The API is exposed under:
 ## 📁 Project Structure
 
 ```text
-meowski-clean/
+Meowski/
 │
 ├── app/
 │   ├── api/

@@ -5,7 +5,9 @@ from langchain_community.document_loaders import PyPDFLoader,TextLoader,Docx2txt
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 import os
 import threading
+import time
 import multiprocessing as mp
+from queue import Empty
 from app.core.config import settings
 
 _parse_semaphore = threading.BoundedSemaphore(settings.parser_concurrency_limit)
@@ -50,20 +52,36 @@ class IngestionService:
         queue = ctx.Queue(maxsize=1)
         process = ctx.Process(target=_parser_worker, args=(self.file_path, queue), daemon=True)
         process.start()
-        process.join(settings.parser_timeout_seconds)
 
-        if process.is_alive():
-            process.terminate()
-            process.join(2)
-            if process.is_alive():
-                process.kill()
-                process.join()
-            raise ValueError("Document parsing timed out.")
-
+        # Read the result BEFORE joining. A child cannot exit while its queue
+        # payload is still unread once it exceeds the OS pipe buffer (~64 KB),
+        # so join()-then-get() reported false "timed out" errors for larger docs.
+        deadline = time.monotonic() + settings.parser_timeout_seconds
         try:
-            status, payload = queue.get(timeout=1)
-        except Exception as exc:
-            raise ValueError("Document parser exited without returning a result.") from exc
+            while True:
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    raise ValueError("Document parsing timed out.")
+                try:
+                    status, payload = queue.get(timeout=min(0.5, remaining))
+                    break
+                except Empty:
+                    if not process.is_alive():
+                        try:
+                            status, payload = queue.get(timeout=0.5)
+                            break
+                        except Empty:
+                            raise ValueError(
+                                "Document parser exited without returning a result."
+                            ) from None
+        finally:
+            if process.is_alive():
+                process.terminate()
+                process.join(2)
+                if process.is_alive():
+                    process.kill()
+            process.join()
+
         if status == "error":
             raise ValueError(payload)
         return payload
@@ -87,6 +105,8 @@ class IngestionService:
                 raise ValueError(f"Document text exceeds the {settings.max_upload_text_chars} character limit.")
 
             chunks = self.splitter.split_documents(docs)
+            if not chunks:
+                raise ValueError("No extractable text found in the document.")
             created_at = datetime.now(timezone.utc)
             expires_at = created_at + timedelta(seconds=settings.session_ttl_seconds) if self.scope == "session" else None
 

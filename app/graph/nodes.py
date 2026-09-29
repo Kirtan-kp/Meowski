@@ -131,6 +131,7 @@ def retrieve_node(state : RAGState , retriever) -> dict:
             "metadata" : make_serializable(document.metadata)
         }
         for document in documents
+        if document.page_content and document.page_content.strip()
     ]
 
     return {
@@ -159,6 +160,7 @@ def generate_node(state : RAGState , prompt , llm) -> dict:
         chat_history=chat_history,
         user_id=state["user_id"],
         session_id=state["session_id"],
+        preferences=state.get("preferences", []),
     )
 
     if cached_answer is not None:
@@ -213,7 +215,8 @@ def generate_node(state : RAGState , prompt , llm) -> dict:
             chat_history=chat_history,
             user_id=state["user_id"],
             session_id=state["session_id"],
-            answer=answer
+            answer=answer,
+            preferences=state.get("preferences", []),
         )
         
     updated_history = list(chat_history) + [

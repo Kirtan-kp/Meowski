@@ -129,7 +129,8 @@ class LLMQuotaService:
         return key
 
     def release_concurrency(self, key: str):
-        self.redis.decr(key)
+        if self.redis.decr(key) < 0:
+            self.redis.incr(key)   # key expired before release; never let the counter go negative
 
     def reserve(
         self,

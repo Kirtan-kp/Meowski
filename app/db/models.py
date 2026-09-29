@@ -1,8 +1,7 @@
 from datetime import datetime
-from sqlalchemy import DateTime, String
+from sqlalchemy import DateTime, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 from app.db.databse import Base
-from sqlalchemy import DateTime, String, UniqueConstraint
 
 class FileRecord(Base):
 

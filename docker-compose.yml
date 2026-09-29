@@ -1,30 +1,29 @@
 services:
-
   api:
     build: .
     ports:
       - "8000:8000"
     volumes:
-      - huggingface_cache:/root/.cache/huggingface
-      - flashrank_cache:/tmp
+      - huggingface_cache:/home/app/.cache/huggingface
+      - flashrank_cache:/home/app/.cache/flashrank
     environment:
       APP_ENV: production
       LOG_LEVEL: INFO
-
       LLM_PROVIDER: groq
       LLM_API_KEY: ${LLM_API_KEY}
       LLM_MODEL: ${LLM_MODEL:-openai/gpt-oss-20b}
-
+      LLM_ENABLED_PROVIDERS: ${LLM_ENABLED_PROVIDERS:-groq}
+      LLM_FALLBACK_PROVIDERS: ${LLM_FALLBACK_PROVIDERS:-}
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://ollama:11434}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.2:3b}
+      METRICS_TOKEN: ${METRICS_TOKEN:?set METRICS_TOKEN in .env}
       QDRANT_URL: http://qdrant:6333
       QDRANT_COLLECTION: cat_rag
       EMBEDDING_MODEL: all-MiniLM-L6-v2
-
-      POSTGRES_URL: postgresql+psycopg://cat_rag:cat_rag@postgres:5432/cat_rag
-
+      POSTGRES_URL: postgresql+psycopg://cat_rag:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@postgres:5432/cat_rag
       REDIS_URL: redis://redis:6379/0
       REDIS_CACHE_URL: redis://redis:6379/0
       REDIS_SESSION_URL: redis://redis:6379/1
-
       SESSION_TTL_SECONDS: ${SESSION_TTL_SECONDS:-7200}
       MAX_CHAT_HISTORY_MESSAGES: ${MAX_CHAT_HISTORY_MESSAGES:-20}
       LLM_DAILY_TOKEN_BUDGET: ${LLM_DAILY_TOKEN_BUDGET:-30000}
@@ -41,26 +40,31 @@ services:
       interval: 15s
       timeout: 5s
       retries: 5
-      start_period: 20s
+      start_period: 90s   # first boot loads torch + downloads embedding/reranker models
     depends_on:
       postgres:
         condition: service_healthy
       redis:
-        condition: service_started
+        condition: service_healthy
       qdrant:
-        condition: service_started
+        condition: service_healthy
 
   qdrant:
     image: qdrant/qdrant:v1.19.0
     volumes:
       - qdrant_data:/qdrant/storage
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c ':> /dev/tcp/127.0.0.1/6333' || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
   postgres:
     image: postgres:16
     environment:
       POSTGRES_DB: cat_rag
       POSTGRES_USER: cat_rag
-      POSTGRES_PASSWORD: cat_rag
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -73,11 +77,24 @@ services:
     image: redis:7
     volumes:
       - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # Optional local fallback: docker compose --profile ollama up
+  # then set LLM_ENABLED_PROVIDERS=groq,ollama and LLM_FALLBACK_PROVIDERS=ollama in .env
+  ollama:
+    image: ollama/ollama:latest
+    profiles: ["ollama"]
+    volumes:
+      - ollama_data:/root/.ollama
 
 volumes:
-
   qdrant_data:
   postgres_data:
   redis_data:
   huggingface_cache:
   flashrank_cache:
+  ollama_data:

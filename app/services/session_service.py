@@ -4,6 +4,18 @@ from app.db.models import SessionRecord, FileRecord
 from app.services.session_state_service import SessionStateService
 from app.core.config import settings
 
+class SessionError(ValueError):
+    """Base class for session problems (subclasses ValueError for backward compatibility)."""
+
+class SessionNotFoundError(SessionError):
+    pass
+
+class SessionInactiveError(SessionError):
+    pass
+
+class SessionExpiredError(SessionError):
+    pass
+
 class SessionService:
 
     def __init__(self , db , state_service : SessionStateService):
@@ -28,12 +40,12 @@ class SessionService:
         session = (self.db.query(SessionRecord).filter(SessionRecord.id == session_id , SessionRecord.user_id == user_id).first())
 
         if session is None:
-            raise ValueError("Session not found")
+            raise SessionNotFoundError("Session not found")
 
         now = datetime.now(timezone.utc)
 
         if session.status != "active":
-            raise ValueError("Session is not active")
+            raise SessionInactiveError("Session is not active")
 
         if session.expires_at <= now:
             session.status = "expired"
@@ -41,7 +53,7 @@ class SessionService:
 
             self.state_service.delete_state(session_id)
 
-            raise ValueError("Session has expired")
+            raise SessionExpiredError("Session has expired")
 
         session.expires_at = now + timedelta(seconds=settings.session_ttl_seconds)
         self.db.query(FileRecord).filter(

@@ -1,0 +1,525 @@
+# About Kirtan
+
+## Who I Am
+
+My name is Kirtan. I was born in Maharashtra and grew up in Jabalpur, Madhya Pradesh. My family/hometown roots are in Gujarat, while I was born in Maharashtra and grew up in Jabalpur, Madhya Pradesh. I have connections to different parts of India and consider each of these places an important part of my background.
+
+I studied at St. Gabriel's School. From an early age, I found myself naturally attracted to subjects that involved logic, reasoning, and understanding how things work. Mathematics and science were subjects that I enjoyed because they required me to think through problems rather than simply remember information. On the other hand, I have never been particularly interested in subjects that rely heavily on memorization, such as history. I generally enjoy understanding the reasoning behind something more than memorizing facts about it.
+
+This preference for understanding rather than memorization has also influenced the way I approach technology. When I learn something technical, I prefer to understand how and why it works instead of simply learning how to use it.
+
+## My Personality
+
+I would describe myself as someone who is fairly comfortable being in my own space. When I am alone in a public place, I tend to keep to myself and stay in my own world. However, when I am around people I am comfortable with, especially my friends, I become much more energetic, expressive, and happy.
+
+I try to be a kind, humble, and decent person. I don't believe that anyone ever reaches a point where there is nothing left to improve. There is always some aspect of yourself that can be understood better, changed, or improved, and I try to keep that mindset in my own life.
+
+I am also someone who tends to question things. I don't like accepting an idea simply because it is commonly accepted or because someone tells me that it is true. I prefer to think about things, ask questions, look at different perspectives, and form my own understanding.
+
+At the same time, I try not to judge people too quickly. When someone does something wrong, I think it is useful to consider not only what they did but also why they did it and what circumstances they were dealing with. Understanding someone's circumstances does not necessarily mean agreeing with their actions, but I believe that understanding the context can lead to a more balanced view of people.
+
+I consider myself somewhat empathetic. Other people's suffering can affect me emotionally, and I can sometimes find myself getting carried away by what another person is going through. I generally try to be considerate of how my actions affect other people.
+
+I am also naturally optimistic. I obviously experience sadness, frustration, and difficult moments like anyone else, but I generally don't stay in those emotions for a very long time. I tend to recover, move forward, and focus on what I can do next.
+
+## My Worldview
+
+I am agnostic. I tend to question things rather than automatically accepting a particular belief system, and I am comfortable acknowledging when I don't know something.
+
+Politically, I consider myself neutral rather than identifying strongly with either the political right or left. I don't want my criticism of a particular issue to depend on which political group is involved. My general approach is to look at the actions and circumstances involved and criticize what I believe is wrong regardless of which political side is responsible.
+
+I also try to look at issues from multiple perspectives. Rather than immediately deciding that one person or group is completely right or completely wrong, I prefer to understand what happened, why it happened, what the circumstances were, and what arguments exist on different sides.
+
+For me, questioning things and remaining open to changing my understanding are more important than holding onto a position simply because I have already adopted it.
+
+## Things I Enjoy
+
+Outside of academics and technology, I have several interests.
+
+I enjoy listening to music. Music is something I naturally turn to during different parts of my day, especially when I want to relax or spend some time in my own space. I particularly enjoy emotional and atmospheric music, and I like artists such as Arijit Singh.
+
+I also enjoy gaming. I play both competitive games and story-driven games, but I am more attracted to story-driven games. I enjoy games that create an atmosphere, world, characters, or narrative that makes the experience feel memorable rather than simply being mechanically competitive.
+
+Some games I have enjoyed include Sekiro, Elden Ring, Control, Rise of the Ronin, and Raft.
+
+I also love playing football. Physical activity is important to me, and I enjoy being active rather than spending all of my time sitting in front of a computer.
+
+And, quite simply, I love food.
+
+## My Approach to Learning
+
+I learn best when I can actually work with something rather than only study it theoretically.
+
+This is particularly true for technology. I prefer taking a concept, implementing it, seeing where it works, seeing where it fails, and then figuring out why. When something doesn't work, I usually want to understand the actual reason behind the problem rather than simply applying a temporary fix.
+
+This has influenced the way I have approached machine learning, computer vision, deep learning, and more recently AI and RAG systems. I enjoy building things and experimenting with different approaches because the process of debugging and improving a system often teaches me more than simply reading about the concept.
+
+I also tend to question whether an approach is actually the right approach before committing to it. If I find a simpler or more appropriate solution, I would rather reconsider the original approach than continue with it just because I have already spent time on it.
+
+I don't want to learn technologies only by following tutorials. I want to reach the point where I can understand a system well enough to modify it, debug it, improve it, and eventually build something of my own.
+
+## My Technical Background
+
+My primary programming language is Python. I have also studied and practiced Data Structures and Algorithms at a basic level.
+
+My main technical journey has been around Artificial Intelligence and Machine Learning. I have worked with Machine Learning, Deep Learning, and some Computer Vision, and I am currently focusing more heavily on AI and modern AI application development.
+
+My technical areas include:
+
+- Python
+- Machine Learning
+- Deep Learning
+- Computer Vision
+- Data Structures and Algorithms
+- Retrieval-Augmented Generation (RAG)
+- MLOps
+- FastAPI
+- Git
+- GitHub
+- GitHub Actions
+- Docker
+- MongoDB
+- AWS
+
+I have worked on projects involving MLOps and RAG, and I am interested in going beyond simply training models. I want to understand how AI systems can be turned into complete, usable applications involving APIs, retrieval systems, deployment, version control, CI/CD, and other engineering components.
+
+My current direction is increasingly focused on AI engineering: combining machine learning and AI knowledge with software engineering to build systems that people can actually use.
+
+---
+
+# Projects
+
+## 1. Cat RAG — Retrieval-Augmented Generation Application
+
+### Overview
+
+Cat RAG is a Retrieval-Augmented Generation application that I am building to explore how modern RAG systems can be designed beyond a basic "embed documents → retrieve chunks → send them to an LLM" pipeline.
+
+The project is intended to demonstrate a more complete retrieval architecture involving multiple retrieval strategies, reranking, query processing, context assembly, filtering, citations, and evaluation.
+
+The name "Cat RAG" comes from the project's cat-themed identity, but technically the project is focused on building a robust and modular RAG system.
+
+### Why I Built It
+
+I wanted to understand RAG as an actual engineering system rather than treating it as simply an API call to an LLM.
+
+A basic RAG application can retrieve a few similar chunks and pass them to a language model, but real-world retrieval introduces several problems. A relevant document may contain exact keywords that dense retrieval does not prioritize, while another relevant document may be semantically similar without sharing the same words as the query.
+
+Because of this, I wanted to experiment with combining different retrieval approaches and adding additional stages to improve the quality of the final context.
+
+### Retrieval Architecture
+
+The retrieval architecture uses a hybrid approach combining dense retrieval and lexical retrieval.
+
+Dense retrieval uses embeddings to find documents that are semantically related to a query. This is useful when the query and document express the same concept using different words.
+
+BM25 provides lexical retrieval and is particularly useful when exact words, names, technical terminology, or specific phrases are important.
+
+The results from these retrieval methods can be combined using Reciprocal Rank Fusion, or RRF. RRF allows results from multiple retrieval systems to be merged into a unified ranking without requiring the individual retrievers to produce directly comparable scores.
+
+After the initial retrieval and fusion stage, a cross-encoder reranker can be used to examine query-document relevance more directly and reorder the retrieved candidates.
+
+The overall retrieval flow can therefore be described as:
+
+```text
+User Query
+    ↓
+Query Processing
+    ↓
+Dense Retrieval ──────┐
+                       ├──→ Reciprocal Rank Fusion
+BM25 Retrieval ───────┘
+                              ↓
+                       Candidate Documents
+                              ↓
+                     Cross-Encoder Reranking
+                              ↓
+                       Context Assembly
+                              ↓
+                         LLM Generation
+                              ↓
+                       Answer + Citations
+```
+
+### Query Processing
+
+The system can perform query rewriting and multi-query retrieval when reformulation can improve retrieval.
+
+Instead of rewriting every query automatically, the idea is to determine when reformulation can improve retrieval. This avoids unnecessarily changing queries that are already clear and precise.
+
+Query processing is therefore treated as part of the retrieval system rather than simply assuming that the user's original wording will always be optimal for document retrieval.
+
+### Metadata and Access Filtering
+
+The project also considers metadata-based filtering and session-aware retrieval.
+
+Metadata can be used to restrict retrieval based on properties of documents, while session information can help maintain appropriate context across interactions.
+
+This is important because a good retrieval system should not simply retrieve semantically similar documents; it should retrieve documents that are relevant and valid for the current context.
+
+### Context Assembly and Citations
+
+Retrieved documents are not simply passed directly to the language model.
+
+The system assembles the relevant information into a structured context that can be used to generate a grounded answer.
+
+Citations are also an important part of the system because they allow the generated response to point back toward the information used to construct it. This makes the result more transparent and helps distinguish retrieved information from generated language.
+
+### Evaluation
+
+A major goal of the project is to evaluate the retrieval system instead of judging its quality only by manually asking a few questions.
+
+The evaluation process considers both retrieval quality and answer quality.
+
+This is important because a language model can sometimes generate a convincing answer even when retrieval was poor. A proper RAG evaluation therefore needs to consider whether the correct information was retrieved as well as whether the final response used that information appropriately.
+
+### What I Learned
+
+Working on Cat RAG has helped me understand that building a useful RAG system involves considerably more than connecting an embedding model to a vector database.
+
+It has given me practical exposure to:
+
+- Dense retrieval
+- BM25
+- Hybrid search
+- Reciprocal Rank Fusion
+- Cross-encoder reranking
+- Query rewriting
+- Metadata filtering
+- Session-aware retrieval
+- Context assembly
+- Citations
+- Retrieval evaluation
+- RAG architecture design
+
+The project has also changed the way I think about AI applications. I increasingly see an AI application as a complete system involving data, retrieval, models, infrastructure, evaluation, and user interaction rather than simply a machine learning model.
+
+---
+
+# 2. Vehicle Performance & Analytics — MLOps Pipeline
+
+## Overview
+
+Vehicle Performance & Analytics is an end-to-end MLOps project designed to automate the machine learning lifecycle from data ingestion to model deployment.
+
+The project was built around a modular architecture where individual components are responsible for specific stages of the pipeline. The goal was to understand how a machine learning model can be moved from an experimental environment toward a more production-oriented workflow.
+
+The system combines MongoDB Atlas, AWS services, Docker, GitHub Actions, and a modular Python architecture to create an automated CI/CD and model delivery pipeline.
+
+## Problem the Project Addresses
+
+A machine learning project does not end when a model achieves good accuracy.
+
+A production-oriented system needs to handle data ingestion, validation, transformation, training, evaluation, model versioning, deployment, logging, error handling, and continuous delivery.
+
+This project was designed to explore those engineering problems and connect the different stages into one automated pipeline.
+
+## System Architecture
+
+The pipeline is divided into several independent components:
+
+```text
+MongoDB Atlas
+     ↓
+Data Ingestion
+     ↓
+Data Validation
+     ↓
+Data Transformation
+     ↓
+Model Training
+     ↓
+Model Evaluation
+     ↓
+Model Pushing
+     ↓
+AWS S3 Model Registry
+     ↓
+Dockerized Production Application
+     ↓
+AWS EC2
+```
+
+Each component has a specific responsibility, allowing the overall system to remain modular and easier to maintain.
+
+### Data Ingestion
+
+The data ingestion component retrieves the vehicle-related dataset from MongoDB Atlas and creates local data artifacts for the downstream pipeline.
+
+MongoDB Atlas acts as the cloud-based NoSQL data source.
+
+### Data Validation
+
+Before the data is used for training, the pipeline validates the dataset against a predefined schema.
+
+Schema-based validation helps ensure that the structure of incoming data remains compatible with the rest of the machine learning pipeline.
+
+This provides an important safeguard against unexpected changes in the dataset.
+
+### Data Transformation
+
+The transformation stage handles preprocessing and feature engineering required before model training.
+
+The transformation component produces processed data artifacts that can be consumed by the model-training stage.
+
+### Model Training
+
+The model trainer is responsible for training machine learning models using the transformed dataset.
+
+The trained estimators are then stored as artifacts for subsequent evaluation.
+
+### Model Evaluation
+
+One of the important aspects of the project is that a newly trained model is not automatically considered suitable for production.
+
+The evaluation stage compares the newly trained model against an existing production baseline stored in AWS S3.
+
+A predefined improvement threshold is used as a gate. The project uses a minimum performance improvement threshold of 0.02 before a newly trained model is pushed as an updated production model.
+
+This creates a basic form of automated model gatekeeping rather than deploying every newly trained model automatically.
+
+### Model Registry
+
+AWS S3 is used as part of the model registry workflow.
+
+When a newly trained model satisfies the evaluation criteria, the model pusher stores the validated model in the designated S3 model registry location.
+
+This provides a centralized location for production model artifacts.
+
+## Cloud Infrastructure
+
+The project uses several AWS services for different parts of the infrastructure:
+
+### AWS S3
+
+Used for storing model artifacts and maintaining the production model registry.
+
+### AWS EC2
+
+Used as the production compute environment where the application is hosted.
+
+### AWS ECR
+
+Used as the container registry for Docker images.
+
+### AWS IAM
+
+Used for managing access to AWS resources required by the pipeline.
+
+Together, these services provide the cloud infrastructure needed for the project's model delivery workflow.
+
+## Docker and Containerization
+
+The production application is containerized using Docker.
+
+Containerization helps package the application and its runtime dependencies into a consistent environment, reducing differences between development and deployment environments.
+
+The Docker image can be built and delivered through the CI/CD workflow and deployed to the production EC2 environment.
+
+## CI/CD with GitHub Actions
+
+GitHub Actions is used to automate the continuous integration and continuous deployment workflow.
+
+The project uses a self-hosted GitHub Actions runner running on the AWS infrastructure.
+
+When changes are pushed to the repository, the CI/CD workflow can execute the required build and deployment operations, including building the Docker image and delivering the updated application.
+
+This reduces the amount of manual work required to move changes from the development repository into the deployed environment.
+
+## Logging and Exception Handling
+
+The project contains centralized logging and exception-handling components to improve traceability during pipeline execution.
+
+Instead of allowing failures to occur without context, the system records information about pipeline execution and errors.
+
+This is particularly important in an MLOps environment because a pipeline may involve multiple independent stages, and identifying exactly where a failure occurred is essential for debugging.
+
+## Modular Architecture
+
+A major design principle of the project is modularity.
+
+Components such as:
+
+- Data Ingestion
+- Data Validation
+- Data Transformation
+- Model Training
+- Model Evaluation
+- Model Pushing
+
+are kept separate.
+
+The project also uses configuration and artifact entities to allow different pipeline components to communicate in a structured way without tightly coupling the implementation of every component.
+
+This makes the system easier to understand, test, modify, and extend.
+
+## Technologies Used
+
+The project uses:
+
+- Python
+- Conda
+- MongoDB Atlas
+- AWS S3
+- AWS EC2
+- AWS ECR
+- AWS IAM
+- Docker
+- GitHub
+- GitHub Actions
+- Flask/FastAPI
+- HTML/CSS
+- Linux
+- Windows PowerShell
+
+## What I Learned
+
+This project helped me understand that machine learning engineering extends far beyond model training.
+
+Through the project, I worked with concepts including:
+
+- Modular ML pipelines
+- Data ingestion
+- Data validation
+- Feature transformation
+- Model training
+- Model evaluation
+- Model registry concepts
+- AWS cloud infrastructure
+- Docker
+- CI/CD
+- GitHub Actions
+- Self-hosted runners
+- Production deployment
+- Logging
+- Exception handling
+- Automated model validation
+
+The project also helped me understand how software engineering practices can be applied to machine learning workflows.
+
+Rather than treating a trained model as the final product, I learned to think about the complete lifecycle of a model: how data enters the system, how it is validated and transformed, how models are trained and evaluated, how production models are managed, and how applications are deployed and updated.
+
+---
+
+# How I Think About Technology
+
+I don't want technology to be something I only study for examinations or certifications. I want to be able to build things with it.
+
+For me, there is a significant difference between saying that I know a technology and actually being able to use it to solve a problem. Because of this, I am interested in projects that force me to connect different pieces together.
+
+The two projects I currently consider particularly representative of my technical interests are Cat RAG and the Vehicle Performance & Analytics MLOps Pipeline.
+
+They represent two sides of the direction I am interested in pursuing.
+
+Cat RAG represents my interest in modern AI systems, information retrieval, LLM applications, and building intelligent systems that can work with external knowledge.
+
+The Vehicle Performance & Analytics project represents my interest in the engineering side of machine learning, including pipelines, cloud infrastructure, deployment, CI/CD, model management, and production workflows.
+
+Together, they reflect my broader goal of becoming capable of building AI systems that are not just models, but complete applications.
+
+---
+
+# My Career Goals
+
+In the future, I want to become an independent person, both financially and emotionally.
+
+I don't have an ambition to become extremely wealthy simply for the sake of having a large amount of money. Financial stability is important to me because I want to be able to take care of myself and the people I care about, particularly my family and friends.
+
+My idea of a successful life is therefore not based entirely on wealth or status. I want to have meaningful work, financial independence, the ability to support the people close to me, and enough freedom to enjoy my life.
+
+Professionally, I want to continue growing in AI and technology and eventually become someone capable of independently building useful and technically strong AI systems.
+
+I am particularly interested in the intersection between machine learning, AI, software engineering, and deployment. I want to become someone who can take an idea from an initial concept, build the underlying AI system, connect it to the necessary infrastructure, deploy it, and continue improving it.
+
+## My Philosophy About Improvement
+
+One belief that is important to me is that there is always room for improvement.
+
+I don't think becoming good at something means reaching a final state where there is nothing left to learn. Whether it is technical knowledge, personality, relationships, or simply understanding yourself better, there is always another level to reach.
+
+Because of this, I try to stay open to criticism and new ideas. I don't want to be attached to an approach simply because it is mine. If I discover that something I believed or built can be improved, I would rather change it than defend it unnecessarily.
+
+I am still figuring out many things about myself and about what I want from life, and I think that is completely normal. I don't expect myself to have everything figured out immediately.
+
+## What Matters to Me
+
+At the end of the day, I want a life where I can be happy, independent, and useful to the people around me.
+
+I want to keep learning, keep improving, build things that I can be proud of, take care of my family and friends, maintain good relationships, stay physically active, enjoy good food and music, and have enough freedom to live life on my own terms.
+
+I don't think life needs to be about becoming the richest or most successful person in the room. For me, being able to support the people I love, enjoy what I do, continue growing as a person, and remain happy with the life I have built would be a meaningful form of success.
+
+---
+
+# Quick Facts About Kirtan
+
+- Name: Kirtan
+- Born in: Maharashtra
+- Raised in: Jabalpur, Madhya Pradesh
+- Hometown: Gujarat
+- School: St. Gabriel's School
+- Primary programming language: Python
+- Technical focus: AI, Machine Learning, Deep Learning, Computer Vision, RAG, and MLOps
+- Additional technologies: FastAPI, Git, GitHub, GitHub Actions, Docker, MongoDB, and AWS
+- Current AI project: Cat RAG
+- MLOps project: Vehicle Performance & Analytics MLOps Pipeline
+- Enjoys: Music, gaming, football, physical activity, and food
+- Prefers: Understanding concepts through logic and practical implementation
+- Values: Kindness, humility, empathy, continuous improvement, independence, and open-mindedness
+- Personal goal: Financial and emotional independence while maintaining a happy life and being able to support family and friends
+
+---
+
+# Frequently Asked Questions
+
+## Who is Kirtan?
+
+Kirtan is a computer science student from India who is interested in Artificial Intelligence, Machine Learning, Deep Learning, Computer Vision, RAG systems, and MLOps. He enjoys learning through practical implementation and building complete technical systems.
+
+## What is Kirtan's primary programming language?
+
+Kirtan primarily uses Python.
+
+## What areas of technology is Kirtan interested in?
+
+His main technical interests include Machine Learning, Deep Learning, Computer Vision, Retrieval-Augmented Generation, AI engineering, MLOps, deployment, and cloud infrastructure.
+
+## What is Cat RAG?
+
+Cat RAG is Kirtan's Retrieval-Augmented Generation project. It explores a modern RAG architecture involving dense retrieval, BM25, Reciprocal Rank Fusion, cross-encoder reranking, query rewriting, metadata filtering, context assembly, citations, and evaluation.
+
+## Why did Kirtan build Cat RAG?
+
+Kirtan wanted to understand RAG as a complete engineering system rather than simply connecting a vector database to an LLM. The project allows him to explore retrieval quality, reranking, query processing, context construction, citations, and evaluation.
+
+## What is the Vehicle Performance & Analytics project?
+
+It is an end-to-end MLOps pipeline designed to automate the machine learning lifecycle from data ingestion through model training, evaluation, model registration, and production deployment.
+
+## What technologies were used in the Vehicle MLOps project?
+
+The project uses Python, MongoDB Atlas, AWS S3, AWS EC2, AWS ECR, AWS IAM, Docker, GitHub Actions, and Flask/FastAPI.
+
+## What did Kirtan learn from his MLOps project?
+
+The project helped Kirtan understand modular ML pipelines, data validation, model evaluation, model registry concepts, cloud infrastructure, Docker, CI/CD, deployment, logging, exception handling, and production-oriented machine learning workflows.
+
+## What does Kirtan enjoy outside technology?
+
+Kirtan enjoys listening to music, playing games, playing football, staying physically active, and trying different kinds of food. He particularly enjoys story-driven games.
+
+## What are Kirtan's career goals?
+
+Kirtan wants to become financially and emotionally independent while building a career in AI and technology. He is interested in roles and work involving AI engineering, machine learning, modern AI applications, and production-oriented systems.
+
+## What does success mean to Kirtan?
+
+For Kirtan, success is not simply about becoming extremely wealthy. He wants financial independence, meaningful work, the ability to support his family and friends, personal freedom, continuous growth, and a happy life.
+
+## How does Kirtan approach learning?
+
+Kirtan prefers learning through implementation. He likes taking concepts, building systems around them, debugging problems, understanding why something failed, and improving the solution rather than relying purely on theoretical study.
+
+## What kind of person does Kirtan try to be?
+
+Kirtan tries to be kind, humble, empathetic, open-minded, and willing to improve. He believes there is always room for personal growth and prefers to question ideas rather than accepting them blindly.

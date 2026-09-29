@@ -1,0 +1,7 @@
+# Only needed for scripts/run_rag_evaluation.py and RAGAS-based evaluation
+-r requirements-dev.txt
+ragas==0.4.3
+datasets==5.0.1
+pandas==3.0.5
+openai==2.54.0
+langchain-openai==1.1.9

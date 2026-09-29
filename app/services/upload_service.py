@@ -6,9 +6,8 @@ from app.vectorstore.qdrant_store import QdrantVectorStore
 from datetime import datetime, timezone
 from app.db.models import FileRecord
 import hashlib
-from sqlalchemy import select,delete
-from app.ingestion.validators import validate_file, MAX_FILE_SIZE
-from app.services.bm25_index_service import BM25IndexService
+from sqlalchemy import select
+from app.ingestion.validators import validate_file, MAX_FILE_SIZE, FileTooLargeError
 
 class UploadService:
 
@@ -28,7 +27,7 @@ class UploadService:
         file_bytes = file.file.read(MAX_FILE_SIZE + 1)
 
         if len(file_bytes) > MAX_FILE_SIZE:
-            raise ValueError("File size exceeds the 10 MB limit.")
+            raise FileTooLargeError("File size exceeds the 10 MB limit.")
         
         suffix = validate_file(file.filename, len(file_bytes), file_bytes)
         file_hash = hashlib.sha256(file_bytes).hexdigest()

@@ -5,7 +5,7 @@ from app.core.config import settings
 from app.vectorstore.base import VectorStore
 from app.services.embedding_service import EmbeddingService
 from langchain_core.documents import Document
-from qdrant_client.models import Distance,VectorParams,Filter,FieldCondition,MatchValue
+from qdrant_client.models import Filter,FieldCondition,MatchValue
 from qdrant_client import models
 
 class QdrantVectorStore(VectorStore):
@@ -15,6 +15,7 @@ class QdrantVectorStore(VectorStore):
         self.client = QdrantClient(url = settings.qdrant_url)
         self.collection_name = settings.qdrant_collection
         self._create_collection_if_not_exists(embedding_dimension)
+        self._ensure_payload_indexes()
         self.embedding_service = EmbeddingService()
         self.vector_store = LangChainQdrantStore(client = self.client , collection_name = self.collection_name , embedding = self.embedding_service.embedding)
 
@@ -28,6 +29,18 @@ class QdrantVectorStore(VectorStore):
                 collection_name = self.collection_name , 
                 vectors_config = VectorParams(size = embedding_dimension , distance = Distance.COSINE)
             )
+
+    def _ensure_payload_indexes(self):
+        # Every query filters on these fields; without indexes Qdrant scans all payloads.
+        for field in ("scope", "user_id", "session_id", "file_id", "file_hash"):
+            try:
+                self.client.create_payload_index(
+                    collection_name = self.collection_name,
+                    field_name = f"metadata.{field}",
+                    field_schema = models.PayloadSchemaType.KEYWORD,
+                )
+            except Exception:
+                pass   # already exists
 
     def add_documents(self, documents):
 

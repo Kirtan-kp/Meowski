@@ -38,8 +38,10 @@ app = FastAPI(title = "Cat RAG API",
 
 init_db()
 
-app.middleware("http")(request_logging_middleware)
+# Starlette runs the LAST-added middleware first (outermost). Rate limiting is added
+# first so request logging/metrics also see the 429 responses it produces.
 app.middleware("http")(rate_limit_middleware)
+app.middleware("http")(request_logging_middleware)
 
 API_PREFIX = "/api/v1"
 

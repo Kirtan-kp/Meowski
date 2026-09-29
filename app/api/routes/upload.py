@@ -5,6 +5,8 @@ from app.db.databse import get_db
 from app.schemas.documents import DocumentResponse
 from app.core.config import settings
 from app.services.rate_limit_service import RateLimitService
+from app.services.session_service import SessionError, SessionNotFoundError
+from app.ingestion.validators import FileTooLargeError
 
 router = APIRouter()
 
@@ -30,16 +32,17 @@ def upload(file : UploadFile = File(...) , user_id : str = Form(...) ,
 
         return {"message" : "File uploaded successfully" , "chunks" : len(chunks)}
 
+    except FileTooLargeError as exc:
+        raise HTTPException(status_code = 413 , detail = str(exc))
+
+    except SessionError as exc:
+        raise HTTPException(
+            status_code = 404 if isinstance(exc, SessionNotFoundError) else 410,
+            detail = str(exc),
+        )
+
     except ValueError as exc:
-        message = str(exc)
-
-        if "10 MB" in message:
-            raise HTTPException(status_code = 413 , detail = message)
-
-        if "Session not found" in message:
-            raise HTTPException(status_code = 404 , detail = message)
-        
-        raise HTTPException(status_code = 400 , detail = message)
+        raise HTTPException(status_code = 400 , detail = str(exc))
 
 @router.get(
     "/documents",

@@ -1,4 +1,3 @@
-from langchain_community.retrievers import BM25Retriever
 from langchain_core.documents import Document
 from langchain_core.retrievers import BaseRetriever
 from app.services.bm25_index_service import BM25IndexService
