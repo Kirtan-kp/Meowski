@@ -12,6 +12,7 @@ from app.services.cleanup_worker import cleanup_worker
 from app.api.routes.metrics import router as metrics_router
 from app.api.routes.preferences import router as preferences_router
 from app.api.routes.health import router as health_router
+from app.api.routes.usage import router as usage_router
 
 setup_logging()
 
@@ -51,3 +52,4 @@ app.include_router(session_router , prefix=API_PREFIX)
 app.include_router(metrics_router , prefix=API_PREFIX)
 app.include_router(preferences_router , prefix=API_PREFIX)
 app.include_router(health_router , prefix=API_PREFIX)
+app.include_router(usage_router , prefix=API_PREFIX)

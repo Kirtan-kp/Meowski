@@ -1,7 +1,7 @@
 import math
 import time
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 import logging
 import hashlib
 
@@ -17,26 +17,43 @@ logger = logging.getLogger(__name__)
 class LLMQuotaService:
     """Application-level token budget guard for zero-cost LLM usage."""
 
+    # Returns {1, 0, "0"} when the reservation is granted, or {0, reason, oldest} when it is blocked.
+    # reason: 2 global daily, 3 provider daily, 4 session daily, 5 global rolling, 6 session rolling.
+    # oldest is the score (timestamp) of the oldest entry in the blocking rolling window, used to tell the visitor when to retry.
     RESERVE_SCRIPT = """
+    local function rolling_total(key, now, window)
+        redis.call('ZREMRANGEBYSCORE', key, 0, now - window)
+        local total = 0
+        for _, entry in ipairs(redis.call('ZRANGE', key, 0, -1)) do
+            local separator = string.find(entry, '|', 1, true)
+            if separator then
+                total = total + tonumber(string.sub(entry, separator + 1))
+            end
+        end
+        return total
+    end
+
+    local function oldest(key)
+        local first = redis.call('ZRANGE', key, 0, 0, 'WITHSCORES')
+        if first[2] then return first[2] end
+        return '0'
+    end
+
+    local now = tonumber(ARGV[1])
+    local requested = tonumber(ARGV[2])
+    local window = tonumber(ARGV[4])
+
     local daily = tonumber(redis.call('GET', KEYS[1]) or '0')
     local provider_daily = tonumber(redis.call('GET', KEYS[2]) or '0')
     local session_daily = tonumber(redis.call('GET', KEYS[3]) or '0')
+    local rolling = rolling_total(KEYS[4], now, window)
+    local session_rolling = rolling_total(KEYS[5], now, window)
 
-    redis.call('ZREMRANGEBYSCORE', KEYS[4], 0, ARGV[1] - ARGV[4])
-    local rolling = 0
-    local entries = redis.call('ZRANGE', KEYS[4], 0, -1)
-    for _, entry in ipairs(entries) do
-        local separator = string.find(entry, '|', 1, true)
-        if separator then
-            rolling = rolling + tonumber(string.sub(entry, separator + 1))
-        end
-    end
-
-    local requested = tonumber(ARGV[2])
-    if daily + requested > tonumber(ARGV[5]) then return 0 end
-    if provider_daily + requested > tonumber(ARGV[6]) then return 0 end
-    if session_daily + requested > tonumber(ARGV[7]) then return 0 end
-    if rolling + requested > tonumber(ARGV[8]) then return 0 end
+    if daily + requested > tonumber(ARGV[5]) then return {0, 2, '0'} end
+    if provider_daily + requested > tonumber(ARGV[6]) then return {0, 3, '0'} end
+    if session_daily + requested > tonumber(ARGV[7]) then return {0, 4, '0'} end
+    if rolling + requested > tonumber(ARGV[8]) then return {0, 5, oldest(KEYS[4])} end
+    if session_rolling + requested > tonumber(ARGV[9]) then return {0, 6, oldest(KEYS[5])} end
 
     redis.call('INCRBY', KEYS[1], requested)
     redis.call('INCRBY', KEYS[2], requested)
@@ -44,13 +61,15 @@ class LLMQuotaService:
 
     local member = ARGV[3] .. '|' .. requested
     redis.call('ZADD', KEYS[4], ARGV[1], member)
+    redis.call('ZADD', KEYS[5], ARGV[1], member)
 
     redis.call('EXPIRE', KEYS[1], 172800)
     redis.call('EXPIRE', KEYS[2], 172800)
     redis.call('EXPIRE', KEYS[3], 172800)
-    redis.call('EXPIRE', KEYS[4], ARGV[4] * 2)
+    redis.call('EXPIRE', KEYS[4], window * 2)
+    redis.call('EXPIRE', KEYS[5], window * 2)
 
-    return 1
+    return {1, 0, '0'}
     """
 
     def __init__(self, redis_client=None):
@@ -111,7 +130,72 @@ class LLMQuotaService:
             f"quota:llm:provider:{scope}:{today}",
             f"quota:llm:session:{user_key}:{session_key}:{today}",
             "quota:llm:rolling",
+            f"quota:llm:rolling:session:{user_key}:{session_key}",
         )
+
+    def get_usage(self, user_id: str, session_id: str, provider: str | None = None) -> dict:
+        """Read-only view of what this visitor can still ask, for the chat's energy meter.
+
+        Looks at every budget that could block them and reports the tightest one, converted to a rough
+        number of questions using the average size of their own recent requests."""
+        provider = provider or settings.llm_provider
+        now = time.time()
+        window = settings.llm_rolling_window_seconds
+        daily_key, provider_key, session_key, rolling_key, session_rolling_key = self._keys(user_id, session_id, provider)
+
+        def spent(key):
+            return int(self.redis.get(key) or 0)
+
+        def recent(key):  # [(tokens, timestamp)] inside the rolling window, oldest first
+            entries = self.redis.zrangebyscore(key, now - window, "+inf", withscores=True)
+            return [(int(str(member).rsplit("|", 1)[-1]), float(score)) for member, score in entries]
+
+        rolling, session_rolling = recent(rolling_key), recent(session_rolling_key)
+        budgets = [  # (reason, limit, used, oldest entry in the window)
+            (2, settings.llm_daily_token_budget, spent(daily_key), None),
+            (3, settings.llm_provider_daily_token_budget, spent(provider_key), None),
+            (4, settings.llm_session_daily_token_budget, spent(session_key), None),
+            (5, settings.llm_rolling_token_budget, sum(t for t, _ in rolling), rolling[0][1] if rolling else None),
+            (6, settings.llm_session_rolling_token_budget, sum(t for t, _ in session_rolling), session_rolling[0][1] if session_rolling else None),
+        ]
+        reason, limit, used, oldest = min(budgets, key=lambda b: b[1] - b[2])
+        remaining = max(0, limit - used)
+        own = [t for t, _ in session_rolling][-5:]
+        cost = max(1, int(sum(own) / len(own)) if own else settings.usage_default_question_tokens)
+        questions_left = remaining // cost
+
+        resets_in = None
+        if questions_left == 0 and (reason in (2, 3, 4) or oldest is not None):
+            resets_in = self._retry_after(reason, oldest, now)
+
+        names = {2: "daily", 3: "provider_daily", 4: "session_daily", 5: "hourly", 6: "session_hourly"}
+        return {
+            "questions_left": questions_left,
+            "fraction": round(remaining / limit, 3) if limit > 0 else 0.0,
+            "resets_in": resets_in,
+            "limited_by": names[reason],
+        }
+
+    @staticmethod
+    def _parse_result(result):
+        """The script returns {granted, reason, oldest}; a plain 1/0 is also accepted."""
+        if isinstance(result, (list, tuple)):
+            return int(result[0]) == 1, int(result[1]) if len(result) > 1 else 0, result[2] if len(result) > 2 else "0"
+        return result == 1, 0, "0"
+
+    @staticmethod
+    def _retry_after(reason: int, oldest, now: float) -> int | None:
+        """Seconds until the blocking budget frees up (None when unknown)."""
+        if reason in (2, 3, 4):  # daily budgets reset at UTC midnight
+            tomorrow = (datetime.fromtimestamp(now, timezone.utc) + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+            return max(1, int((tomorrow - datetime.fromtimestamp(now, timezone.utc)).total_seconds()))
+        if reason in (5, 6):  # rolling windows free up as old requests age out
+            try:
+                freed_at = float(oldest) + settings.llm_rolling_window_seconds
+            except (TypeError, ValueError):
+                return None
+            return min(settings.llm_rolling_window_seconds, max(1, math.ceil(freed_at - now)))
+        return None
 
     def acquire_concurrency(self, provider: str | None = None) -> str:
         provider = provider or settings.llm_provider
@@ -160,7 +244,7 @@ class LLMQuotaService:
 
         allowed = self.redis.eval(
             self.RESERVE_SCRIPT,
-            4,
+            5,
             *keys,
             now,
             estimated_tokens,
@@ -170,9 +254,11 @@ class LLMQuotaService:
             settings.llm_provider_daily_token_budget,
             settings.llm_session_daily_token_budget,
             settings.llm_rolling_token_budget,
+            settings.llm_session_rolling_token_budget,
         )
+        granted, reason, oldest = self._parse_result(allowed)
 
-        if not allowed:
+        if not granted:
             logger.warning(
                 "stage=llm_quota outcome=blocked provider=%s session_id=%s estimated_tokens=%s",
                 provider, session_id, estimated_tokens,
@@ -182,7 +268,8 @@ class LLMQuotaService:
                 "blocked"
             )
             raise LLMQuotaExceededError(
-                "LLM capacity is temporarily exhausted. Please try again later."
+                "LLM capacity is temporarily exhausted. Please try again later.",
+                retry_after=self._retry_after(reason, oldest, now),
             )
 
         logger.info(

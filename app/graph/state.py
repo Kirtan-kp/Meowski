@@ -24,3 +24,5 @@ class RAGState(TypedDict , total = False):
     request_id: str
 
     preferences: list[dict]
+
+    mode: str  # "portfolio" | "document" | "mixed" | "general"

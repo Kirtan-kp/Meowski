@@ -48,9 +48,11 @@ def chat(request : ChatRequest , http_request : Request , chat_service : ChatSer
         ) from exc
     
     except LLMQuotaExceededError as exc:
+        retry_after = getattr(exc, "retry_after", None)
         raise HTTPException(
             status_code=429,
             detail=str(exc),
+            headers={"Retry-After": str(retry_after)} if retry_after else None,  # lets the UI say when to come back
         ) from exc
 
     except LLMProviderDisabledError as exc:
@@ -66,5 +68,6 @@ def chat(request : ChatRequest , http_request : Request , chat_service : ChatSer
         ) from exc
     return {
         "response" : response.answer,
-        "sources": response.sources
+        "sources": response.sources,
+        "mode": response.mode
     }

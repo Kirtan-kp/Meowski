@@ -9,3 +9,4 @@ class ChatRequest(BaseModel):
 class ChatResponse(BaseModel):
     response : str
     sources : list[Source]
+    mode : str = "portfolio"

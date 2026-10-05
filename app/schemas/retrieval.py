@@ -7,3 +7,4 @@ class Source(BaseModel):
 class RetrievalResponse(BaseModel):
     answer : str
     sources : list[Source]
+    mode : str = "portfolio"

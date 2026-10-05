@@ -5,6 +5,7 @@ from qdrant_client.models import Filter, FieldCondition, MatchValue
 from app.rag.context import build_context
 from app.services.llm_cache_service import LLMCacheService
 from app.core.config import settings
+from app.graph.routing import trim_history, mode_from_documents, is_shareable
 import logging
 import time
 from app.api.dependencies import get_observability_service
@@ -143,14 +144,21 @@ def generate_node(state : RAGState , prompt , llm) -> dict:
 
     request_id = state.get("request_id", "unknown")
     start_time = time.perf_counter()
-    context = build_context(state["documents"])
+    context = build_context(state["documents"])[: settings.max_context_chars]
+    mode = mode_from_documents(state["documents"])
 
     if state.get("retry_count", 0) > 0:
         question = state.get("rewritten_question", state["question"])
     else:
         question = state["question"]
 
-    chat_history = state.get("chat_history", [])
+    full_history = state.get("chat_history", [])
+    chat_history = trim_history(full_history)  # smaller prompts: only recent turns, each clipped
+    preferences = state.get("preferences", [])
+    # The first question about public portfolio content has one answer for every visitor, so share the cache entry.
+    shared = is_shareable(full_history, preferences, mode)
+    cache_user = "shared" if shared else state["user_id"]
+    cache_session = "shared" if shared else state["session_id"]
 
     cache = LLMCacheService()
 
@@ -158,8 +166,8 @@ def generate_node(state : RAGState , prompt , llm) -> dict:
         question=question,
         context=context,
         chat_history=chat_history,
-        user_id=state["user_id"],
-        session_id=state["session_id"],
+        user_id=cache_user,
+        session_id=cache_session,
         preferences=state.get("preferences", []),
     )
 
@@ -213,24 +221,24 @@ def generate_node(state : RAGState , prompt , llm) -> dict:
             question=question,
             context=context,
             chat_history=chat_history,
-            user_id=state["user_id"],
-            session_id=state["session_id"],
+            user_id=cache_user,
+            session_id=cache_session,
             answer=answer,
             preferences=state.get("preferences", []),
         )
         
-    updated_history = list(chat_history) + [
+    updated_history = list(full_history) + [
         HumanMessage(content=state["question"]),
         AIMessage(content=answer),
     ]
     updated_history = updated_history[-settings.max_chat_history_messages:]
 
     return {"context": context, "answer": answer, "documents": state["documents"],
-            "chat_history": updated_history}
+            "chat_history": updated_history, "mode": mode}
 
 def rewrite_query_node(state : RAGState , llm) -> dict: 
 
-    chat_history = state.get("chat_history" , [])
+    chat_history = trim_history(state.get("chat_history" , []))
 
     history_text = "\n".join(f"{message.type} : {message.content}" for message in chat_history)
 
@@ -267,3 +275,49 @@ def rewrite_query_node(state : RAGState , llm) -> dict:
             if hasattr(rewritten_question , "content") 
             else str(rewritten_question), 
             "retry_count" : state.get("retry_count" , 0) + 1}
+
+def generate_general_node(state: RAGState, general_prompt, llm) -> dict:
+    """Nothing relevant was found in the portfolio or uploaded files: answer from general knowledge.
+    The response is marked mode="general" so the UI can label it, and it carries no sources."""
+    request_id = state.get("request_id", "unknown")
+    start_time = time.perf_counter()
+    question = state["question"]
+    full_history = state.get("chat_history", [])
+    chat_history = trim_history(full_history)
+    preferences = state.get("preferences", [])
+    shared = is_shareable(full_history, preferences, "general")
+    cache_user = "shared" if shared else state["user_id"]
+    cache_session = "shared" if shared else state["session_id"]
+
+    cache = LLMCacheService()
+    answer = cache.get(
+        question=question,
+        context="general",
+        chat_history=chat_history,
+        user_id=cache_user,
+        session_id=cache_session,
+        preferences=preferences,
+    )
+    cache_hit = answer is not None
+    if not cache_hit:
+        answer = (general_prompt | llm | StrOutputParser()).invoke(
+            {"question": question, "chat_history": chat_history, "preferences": preferences}
+        )
+        cache.set(
+            question=question,
+            context="general",
+            chat_history=chat_history,
+            user_id=cache_user,
+            session_id=cache_session,
+            answer=answer,
+            preferences=preferences,
+        )
+
+    logger.info(
+        "request_id=%s stage=general_generation cache_hit=%s latency_ms=%.2f",
+        request_id, cache_hit, (time.perf_counter() - start_time) * 1000,
+    )
+    updated_history = (list(full_history) + [HumanMessage(content=question), AIMessage(content=answer)])[
+        -settings.max_chat_history_messages:
+    ]
+    return {"context": "", "answer": answer, "documents": [], "chat_history": updated_history, "mode": "general"}

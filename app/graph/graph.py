@@ -1,39 +1,33 @@
 from langgraph.graph import StateGraph, START, END
 from app.graph.state import RAGState
-from app.graph.nodes import retrieve_node, generate_node, rewrite_query_node 
+from app.graph.nodes import retrieve_node, generate_node, generate_general_node, rewrite_query_node
+from app.graph.routing import route_after_retrieve
+from app.rag.prompt import GENERAL_PROMPT
 import logging
 
 logger = logging.getLogger(__name__)
 
-def should_retry(state: RAGState) -> str: 
+# Kept under the old name so existing imports keep working.
+should_retry = route_after_retrieve
 
-    retry_count = state.get("retry_count", 0)
-    if retry_count >= 1:
-        return "generate"
-    
-    documents = state.get("documents" , []) 
 
-    if not documents: 
-        return "rewrite"
+def create_rag_graph(retriever, prompt, llm, general_prompt=GENERAL_PROMPT):
+    """retrieve -> (generate | rewrite -> retrieve | general)
 
-    scores = [float(document["metadata"].get("relevance_score" , 0)) for document in documents]
-    max_score = max(scores , default = 0)
-
-    if max_score < 0.5:
-            return "rewrite"
-    
-    return "generate"
-
-def create_rag_graph(retriever , prompt , llm):
-
+    - generate: grounded answer from the portfolio or the visitor's uploaded files
+    - rewrite:  one retry for follow-up questions that need their context spelled out
+    - general:  nothing relevant found, so answer from general knowledge (marked mode="general")
+    """
     graph = StateGraph(RAGState)
 
-    graph.add_node("retrieve" , lambda state : retrieve_node(state , retriever))
+    graph.add_node("retrieve", lambda state: retrieve_node(state, retriever))
     graph.add_node("rewrite", lambda state: rewrite_query_node(state, llm))
-    graph.add_node("generate" , lambda state: generate_node(state , prompt , llm))
-    graph.add_edge(START , "retrieve")
-    graph.add_conditional_edges("retrieve" , should_retry , {"rewrite" : "rewrite", "generate" : "generate"})
-    graph.add_edge( "rewrite", "retrieve" )
-    graph.add_edge("generate" , END)
+    graph.add_node("generate", lambda state: generate_node(state, prompt, llm))
+    graph.add_node("general", lambda state: generate_general_node(state, general_prompt, llm))
+    graph.add_edge(START, "retrieve")
+    graph.add_conditional_edges("retrieve", route_after_retrieve, {"rewrite": "rewrite", "generate": "generate", "general": "general"})
+    graph.add_edge("rewrite", "retrieve")
+    graph.add_edge("generate", END)
+    graph.add_edge("general", END)
 
     return graph.compile()

@@ -26,12 +26,23 @@ class Settings(BaseSettings):
     llm_max_retries: int = 2
 
     llm_provider_enabled: bool = True
-    llm_daily_token_budget: int = 30000
-    llm_rolling_token_budget: int = 8000
+    # Budgets: set them just under your provider's real limits (see .env.example). Defaults suit a small public demo.
+    llm_daily_token_budget: int = 90000
+    llm_rolling_token_budget: int = 24000
+    llm_session_rolling_token_budget: int = 9000  # per visitor per window, so one person cannot use everyone's share
     llm_rolling_window_seconds: int = 3600
-    llm_session_daily_token_budget: int = 10000
-    llm_provider_daily_token_budget: int = 40000
+    llm_session_daily_token_budget: int = 25000
+    llm_provider_daily_token_budget: int = 100000
     llm_max_request_tokens: int = 8192
+
+    # Answering and prompt size
+    general_answers_enabled: bool = True  # answer off-topic questions from general knowledge instead of refusing
+    min_relevance_score: float = 0.5
+    prompt_history_messages: int = 6
+    prompt_history_chars: int = 700
+    max_context_chars: int = 6000
+    shared_answer_cache_enabled: bool = True
+    usage_default_question_tokens: int = 2500  # used for the "questions left" estimate until a visitor has history
     llm_max_output_tokens: int = 512
     llm_token_estimate_safety_factor: float = 1.2
     llm_concurrency_limit: int = 2
