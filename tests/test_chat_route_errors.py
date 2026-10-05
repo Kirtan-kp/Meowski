@@ -29,6 +29,7 @@ def create_app(error):
             class Response:
                 answer = "Test answer"
                 sources = []
+                mode = "portfolio"
 
             return Response()
 
