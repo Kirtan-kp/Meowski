@@ -20,11 +20,17 @@ class FakeCacheService:
 
 
 class FakeRetriever:
-    def __init__(self, documents):
+    """Returns `documents` for the normal filter and `session_documents` when only the visitor's upload is searched."""
+
+    def __init__(self, documents, session_documents=None):
         self.documents = documents
+        self.session_documents = session_documents or []
+        self.calls = []
 
     def invoke(self, question, filter=None):
-        return self.documents
+        session_only = bool(filter is not None and filter.must and not filter.should)
+        self.calls.append("session" if session_only else "all")
+        return self.session_documents if session_only else self.documents
 
 
 class CountingLLM:
@@ -58,9 +64,11 @@ def graph_env(monkeypatch):
         sys.modules.pop(name, None)
 
 
-def run(graph_module, documents, question, history=None):
+def run(graph_module, documents, question, history=None, session_documents=None):
     llm = CountingLLM()
-    compiled = graph_module.create_rag_graph(FakeRetriever(documents), RAG_PROMPT, llm.runnable())
+    retriever = FakeRetriever(documents, session_documents)
+    compiled = graph_module.create_rag_graph(retriever, RAG_PROMPT, llm.runnable())
+    llm.retriever = retriever
     state = {"question": question, "user_id": "u", "session_id": "s", "request_id": "r", "retry_count": 0,
              "chat_history": history or [], "preferences": []}
     return compiled.invoke(state), llm
@@ -99,3 +107,20 @@ def test_follow_up_is_rewritten_before_falling_back(graph_env):
     result, llm = run(graph_env, [chunk(0.05)], "and how does it rank?", history)
     assert len(llm.prompts) == 2 and result["mode"] == "general"
     assert len(result["chat_history"]) == 4
+
+
+def test_question_about_uploaded_file_is_answered_from_the_file(graph_env):
+    file_chunk = chunk(0.1, "session")  # low reranker score, like a vague "summarize it"
+    result, llm = run(graph_env, [chunk(0.1)], "can you tell me about this story like a short summary?", session_documents=[file_chunk])
+    assert result["mode"] == "document" and result["file_focus"] is True
+    assert llm.retriever.calls == ["all", "session"] and len(llm.prompts) == 1
+
+
+def test_ordinary_questions_do_not_search_the_upload_separately(graph_env):
+    _, llm = run(graph_env, [chunk(0.9)], "Who is Kirtan?", session_documents=[chunk(0.9, "session")])
+    assert llm.retriever.calls == ["all"]
+
+
+def test_file_question_without_an_upload_falls_back_normally(graph_env):
+    result, llm = run(graph_env, [chunk(0.05)], "summarize the file i uploaded")
+    assert result["mode"] == "general" and llm.retriever.calls == ["all", "session"]

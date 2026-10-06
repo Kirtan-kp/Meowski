@@ -8,9 +8,14 @@ class GroqLLM(BaseLLM):
     def __init__(self):
 
         self.api_key = settings.llm_api_key
+        extra = {}
+        # Reasoning models count their hidden thinking against max_tokens. A low effort leaves room for the visible answer.
+        effort = settings.llm_reasoning_effort or ("low" if "gpt-oss" in settings.llm_model.lower() else "")
+        if effort:
+            extra["reasoning_effort"] = effort
         self._llm = ChatGroq(api_key = self.api_key , model = settings.llm_model , 
                             timeout = settings.llm_timeout_seconds , max_retries = settings.llm_max_retries,
-                            max_tokens = settings.llm_max_output_tokens)
+                            max_tokens = settings.llm_max_output_tokens , **extra)
 
     @property
     def llm(self):

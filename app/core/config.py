@@ -43,7 +43,10 @@ class Settings(BaseSettings):
     max_context_chars: int = 6000
     shared_answer_cache_enabled: bool = True
     usage_default_question_tokens: int = 2500  # used for the "questions left" estimate until a visitor has history
-    llm_max_output_tokens: int = 512
+    # Reasoning models (e.g. gpt-oss) spend part of this budget on hidden "thinking", so keep it comfortably above the
+    # longest answer you want. Too low and answers are cut off mid-sentence.
+    llm_max_output_tokens: int = 768
+    llm_reasoning_effort: str = ""  # "low" | "medium" | "high"; empty = "low" for gpt-oss models, unset for others
     llm_token_estimate_safety_factor: float = 1.2
     llm_concurrency_limit: int = 2
     llm_fallback_providers: str = ""

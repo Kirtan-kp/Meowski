@@ -5,7 +5,7 @@ from qdrant_client.models import Filter, FieldCondition, MatchValue
 from app.rag.context import build_context
 from app.services.llm_cache_service import LLMCacheService
 from app.core.config import settings
-from app.graph.routing import trim_history, mode_from_documents, is_shareable
+from app.graph.routing import trim_history, mode_from_documents, is_shareable, refers_to_uploaded_file
 import logging
 import time
 from app.api.dependencies import get_observability_service
@@ -69,6 +69,21 @@ def retrieve_node(state : RAGState , retriever) -> dict:
 
     try:
         documents = retriever.invoke(question , filter = access_filter)
+
+        # "Summarize my file": search only the visitor's own upload, so portfolio chunks cannot crowd it out.
+        file_focus = False
+        if refers_to_uploaded_file(state["question"]):
+            session_only = Filter(
+                must=[
+                    FieldCondition(key = "metadata.scope" , match = MatchValue(value = "session")),
+                    FieldCondition(key = "metadata.user_id" , match = MatchValue(value = state["user_id"])),
+                    FieldCondition(key = "metadata.session_id" , match = MatchValue(value = state["session_id"])),
+                ]
+            )
+            file_documents = retriever.invoke(question , filter = session_only)
+            if file_documents:
+                documents = file_documents
+                file_focus = True
         document_ids = [
             str(
                 document.metadata.get(
@@ -137,7 +152,8 @@ def retrieve_node(state : RAGState , retriever) -> dict:
 
     return {
         "documents" : serializable_documents,
-        "retry_count" : state.get("retry_count", 0)
+        "retry_count" : state.get("retry_count", 0),
+        "file_focus" : file_focus,
     }
 
 def generate_node(state : RAGState , prompt , llm) -> dict:

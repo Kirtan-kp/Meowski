@@ -10,6 +10,18 @@ from app.core.config import settings
 _REFERENCE_WORDS = re.compile(r"\b(it|its|this|that|these|those|they|them|their|he|him|his|she|her|there|one)\b", re.IGNORECASE)
 
 
+# Questions that point at the visitor's own upload ("summarize the file I uploaded", "this story").
+_FILE_WORDS = re.compile(
+    r"\b(file|files|document|documents|pdf|docx|upload|uploaded|uploading|attachment|attached"
+    r"|this (story|paper|article|chapter|essay|report|resume|cv|text|book|passage|lesson|document|file))\b",
+    re.IGNORECASE,
+)
+
+
+def refers_to_uploaded_file(question: str) -> bool:
+    return bool(_FILE_WORDS.search(question))
+
+
 def max_relevance(documents: list[dict]) -> float:
     scores = [float((d.get("metadata") or {}).get("relevance_score", 0)) for d in documents]
     return max(scores, default=0.0)
@@ -27,6 +39,11 @@ def route_after_retrieve(state: dict) -> str:
     """Decide the next graph step: "generate" (grounded answer), "rewrite" (retry retrieval) or "general"."""
     documents = state.get("documents", [])
     retry_count = state.get("retry_count", 0)
+
+    # The visitor asked about their own file and we found passages from it: answer from them even when scores are modest
+    # (vague requests like "summarize it" never score highly against a reranker).
+    if state.get("file_focus") and documents:
+        return "generate"
 
     if documents and max_relevance(documents) >= settings.min_relevance_score:
         return "generate"

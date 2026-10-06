@@ -25,4 +25,5 @@ class RAGState(TypedDict , total = False):
 
     preferences: list[dict]
 
+    file_focus: bool  # the question is about the visitor's uploaded file and passages from it were found
     mode: str  # "portfolio" | "document" | "mixed" | "general"

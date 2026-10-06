@@ -1,7 +1,7 @@
 from langchain_core.messages import AIMessage, HumanMessage
 
 from app.core.config import settings
-from app.graph.routing import is_shareable, looks_like_followup, mode_from_documents, route_after_retrieve, trim_history
+from app.graph.routing import refers_to_uploaded_file, is_shareable, looks_like_followup, mode_from_documents, route_after_retrieve, trim_history
 
 
 def doc(score, scope="portfolio"):
@@ -64,3 +64,16 @@ def test_shared_cache_only_for_first_public_questions():
     assert not is_shareable([], [{"key": "tone", "value": "formal"}], "portfolio")
     assert not is_shareable([], [], "document")  # uploaded files are private
     assert not is_shareable([], [], "mixed")
+
+
+def test_file_questions_are_recognised():
+    for q in ["can you tell me about this story like a short summary?", "from the file i uploaded", "Summarize my PDF", "what does the document say"]:
+        assert refers_to_uploaded_file(q), q
+    for q in ["Who is Kirtan?", "Summarize Kirtan's projects", "What is the capital of France?"]:
+        assert not refers_to_uploaded_file(q), q
+
+
+def test_file_focus_answers_from_the_file_even_with_low_scores():
+    state = {"documents": [doc(0.1, "session")], "question": "from the file i uploaded", "file_focus": True, "chat_history": []}
+    assert route_after_retrieve(state) == "generate"
+    assert route_after_retrieve({**state, "file_focus": False}) == "general"
