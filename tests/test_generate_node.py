@@ -1,5 +1,4 @@
-from app.graph.nodes import generate_node
-
+import app.graph.nodes as nodes
 
 class FakeLLM:
     def __init__(self):
@@ -74,11 +73,12 @@ def test_generate_node_calls_llm_on_cache_miss(monkeypatch):
     fake_cache = FakeCache(cached_answer=None)
 
     monkeypatch.setattr(
-        "app.graph.nodes.LLMCacheService",
+        nodes,
+        "LLMCacheService",
         lambda: FakeCacheService(fake_cache),
     )
 
-    result = generate_node(
+    result = nodes.generate_node(
         state=create_state(),
         prompt=FakePrompt(),
         llm=fake_llm,
@@ -95,11 +95,12 @@ def test_generate_node_skips_llm_on_cache_hit(monkeypatch):
     fake_cache = FakeCache(cached_answer="Cached answer")
 
     monkeypatch.setattr(
-        "app.graph.nodes.LLMCacheService",
+        nodes,
+        "LLMCacheService",
         lambda: FakeCacheService(fake_cache),
     )
 
-    result = generate_node(
+    result = nodes.generate_node(
         state=create_state(),
         prompt=FakePrompt(),
         llm=fake_llm,
@@ -112,7 +113,7 @@ def test_generate_node_skips_llm_on_cache_hit(monkeypatch):
 def test_generate_node_appends_to_existing_history(monkeypatch):
     fake_llm = FakeLLM()
     fake_cache = FakeCache(cached_answer="Cached answer")
-    monkeypatch.setattr("app.graph.nodes.LLMCacheService", lambda: FakeCacheService(fake_cache))
+    monkeypatch.setattr(nodes, "LLMCacheService", lambda: FakeCacheService(fake_cache))
 
     from langchain_core.messages import HumanMessage, AIMessage
     state = create_state()
@@ -121,7 +122,7 @@ def test_generate_node_appends_to_existing_history(monkeypatch):
         AIMessage(content="Earlier answer"),
     ]
 
-    result = generate_node(state=state, prompt=FakePrompt(), llm=fake_llm)
+    result = nodes.generate_node(state=state, prompt=FakePrompt(), llm=fake_llm)
     assert result["chat_history"][-2].content == state["question"]
     assert result["chat_history"][-1].content == "Cached answer"
     assert len(result["chat_history"]) == 4
