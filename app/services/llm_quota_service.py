@@ -14,6 +14,17 @@ from app.llm.exceptions import LLMQuotaExceededError, LLMProviderDisabledError, 
 logger = logging.getLogger(__name__)
 
 
+class Reservation(int):
+    """The reserved token count (so it still behaves like a plain int) plus what is needed to settle it later."""
+
+    def __new__(cls, tokens: int, keys=(), member_id: str = "", score: float = 0.0):
+        obj = super().__new__(cls, tokens)
+        obj.keys = tuple(keys)
+        obj.member_id = member_id
+        obj.score = score
+        return obj
+
+
 class LLMQuotaService:
     """Application-level token budget guard for zero-cost LLM usage."""
 
@@ -70,6 +81,22 @@ class LLMQuotaService:
     redis.call('EXPIRE', KEYS[5], window * 2)
 
     return {1, 0, '0'}
+    """
+
+    # After the provider answers, swap the worst-case reservation for the real token count (both directions),
+    # in the three counters and in both rolling windows. KEYS match RESERVE_SCRIPT.
+    SETTLE_SCRIPT = """
+    local diff = tonumber(ARGV[4])
+    for i = 1, 3 do
+        local value = redis.call('INCRBY', KEYS[i], diff)
+        if value < 0 then redis.call('DECRBY', KEYS[i], value) end
+    end
+    for i = 4, 5 do
+        if redis.call('ZREM', KEYS[i], ARGV[1]) == 1 then
+            redis.call('ZADD', KEYS[i], ARGV[3], ARGV[2])
+        end
+    end
+    return 1
     """
 
     def __init__(self, redis_client=None):
@@ -281,4 +308,26 @@ class LLMQuotaService:
         get_observability_service().record_quota(
             "reserved"
         )
-        return estimated_tokens
+        return Reservation(estimated_tokens, keys=keys, member_id=member_id, score=now)
+
+    def settle(self, reservation, actual_tokens) -> None:
+        """Replace the estimate with what the provider really used, so budgets track real spend.
+        Pass 0 when the call failed (nothing was generated). Never raises: accounting must not break an answer."""
+        if not isinstance(reservation, Reservation) or actual_tokens is None:
+            return
+        actual = max(1, int(actual_tokens))
+        diff = actual - int(reservation)
+        if diff == 0:
+            return
+        try:
+            self.redis.eval(
+                self.SETTLE_SCRIPT,
+                5,
+                *reservation.keys,
+                f"{reservation.member_id}|{int(reservation)}",
+                f"{reservation.member_id}|{actual}",
+                reservation.score,
+                diff,
+            )
+        except Exception:
+            logger.warning("stage=llm_quota outcome=settle_failed", exc_info=True)

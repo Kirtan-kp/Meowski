@@ -26,13 +26,14 @@ class Settings(BaseSettings):
     llm_max_retries: int = 2
 
     llm_provider_enabled: bool = True
-    # Budgets: set them just under your provider's real limits (see .env.example). Defaults suit a small public demo.
-    llm_daily_token_budget: int = 90000
-    llm_rolling_token_budget: int = 24000
-    llm_session_rolling_token_budget: int = 9000  # per visitor per window, so one person cannot use everyone's share
+    # Budgets: defaults sit just under the Groq free plan for openai/gpt-oss-20b (200K tokens per day, 8K per minute).
+    # Tokens are now counted from what the provider really used, so these are real tokens. See .env.example.
+    llm_daily_token_budget: int = 180000
+    llm_rolling_token_budget: int = 100000
+    llm_session_rolling_token_budget: int = 30000  # per visitor per window, so one person cannot use everyone's share
     llm_rolling_window_seconds: int = 3600
-    llm_session_daily_token_budget: int = 25000
-    llm_provider_daily_token_budget: int = 100000
+    llm_session_daily_token_budget: int = 50000
+    llm_provider_daily_token_budget: int = 190000
     llm_max_request_tokens: int = 8192
 
     # Answering and prompt size
@@ -42,7 +43,7 @@ class Settings(BaseSettings):
     prompt_history_chars: int = 700
     max_context_chars: int = 6000
     shared_answer_cache_enabled: bool = True
-    usage_default_question_tokens: int = 2500  # used for the "questions left" estimate until a visitor has history
+    usage_default_question_tokens: int = 2000  # used for the "questions left" estimate until a visitor has history
     # Reasoning models (e.g. gpt-oss) spend part of this budget on hidden "thinking", so keep it comfortably above the
     # longest answer you want. Too low and answers are cut off mid-sentence.
     llm_max_output_tokens: int = 768

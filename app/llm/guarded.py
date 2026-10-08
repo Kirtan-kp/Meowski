@@ -44,7 +44,7 @@ class QuotaGuardedLLM(Runnable):
     def _record_usage(self, response):
         usage = getattr(response, "usage_metadata", None) or getattr(response, "response_metadata", {}).get("token_usage")
         if not isinstance(usage, dict):
-            return
+            return None
 
         input_tokens = usage.get("input_tokens", usage.get("prompt_tokens"))
         output_tokens = usage.get("output_tokens", usage.get("completion_tokens"))
@@ -59,6 +59,7 @@ class QuotaGuardedLLM(Runnable):
             output_tokens=output_tokens,
             total_tokens=total_tokens,
         )
+        return total_tokens
 
     def invoke(self, input, config=None, **kwargs):
         user_id, session_id = self._context()
@@ -78,9 +79,10 @@ class QuotaGuardedLLM(Runnable):
             )
             try:
                 response = self.llm.invoke(input, config=config, **kwargs)
-                self._record_usage(response)
+                self.quota_service.settle(estimated_tokens, self._record_usage(response))
                 return response
             except Exception as exc:
+                self.quota_service.settle(estimated_tokens, 0)  # nothing was generated: give the reservation back
                 raise self._normalize_error(exc) from exc
         except LLMConcurrencyLimitError:
             get_observability_service().record_quota("concurrency_blocked")
@@ -107,9 +109,10 @@ class QuotaGuardedLLM(Runnable):
             )
             try:
                 response = await self.llm.ainvoke(input, config=config, **kwargs)
-                self._record_usage(response)
+                self.quota_service.settle(estimated_tokens, self._record_usage(response))
                 return response
             except Exception as exc:
+                self.quota_service.settle(estimated_tokens, 0)
                 raise self._normalize_error(exc) from exc
         except LLMConcurrencyLimitError:
             get_observability_service().record_quota("concurrency_blocked")

@@ -39,6 +39,7 @@ def chat(request : ChatRequest , http_request : Request , chat_service : ChatSer
         raise HTTPException(
             status_code=429,
             detail=str(exc),
+            headers={"Retry-After": "20"},  # the provider's per-minute allowance refills quickly
         ) from exc
 
     except LLMProviderError as exc:
