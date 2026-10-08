@@ -78,6 +78,7 @@ def test_guard_reserves_before_provider_call():
         def __init__(self):
             self.calls = []
             self.concurrency_calls = []
+            self.settlements = []
 
         def reserve(self, prompt, **kwargs):
             self.calls.append((prompt, kwargs))
@@ -89,6 +90,9 @@ def test_guard_reserves_before_provider_call():
 
         def release_concurrency(self, key):
             self.concurrency_calls.append(("release", key))
+
+        def settle(self, estimated_tokens, actual_tokens):
+            self.settlements.append((estimated_tokens, actual_tokens))
 
     provider = FakeProvider()
     quota = FakeQuota()
@@ -154,6 +158,7 @@ def test_concurrency_guard_releases_after_provider_call():
     class FakeQuota:
         def __init__(self):
             self.released = []
+            self.settlements = []
 
         def reserve(self, prompt, **kwargs):
             return 100
@@ -163,6 +168,9 @@ def test_concurrency_guard_releases_after_provider_call():
 
         def release_concurrency(self, key):
             self.released.append(key)
+
+        def settle(self, estimated_tokens, actual_tokens):
+            self.settlements.append((estimated_tokens, actual_tokens))
 
     provider = FakeProvider()
     quota = FakeQuota()
