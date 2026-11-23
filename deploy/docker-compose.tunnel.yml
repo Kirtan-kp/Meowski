@@ -1,0 +1,27 @@
+# Run Meowski on your own PC and reach it from the internet through a free Cloudflare quick tunnel.
+# No credit card, no domain, no account. Start it with:
+#   docker compose -f docker-compose.yml -f deploy/docker-compose.tunnel.yml up -d --build
+# Then read the public address with:  docker compose logs cloudflared   (look for https://....trycloudflare.com)
+# The address changes every time the tunnel container restarts. See deploy/TUNNEL.md.
+services:
+  api:
+    ports: !reset []        # not published on your PC's network; only the tunnel reaches it
+    restart: unless-stopped
+    environment:
+      PROXY_SECRET: ${PROXY_SECRET:?set PROXY_SECRET in .env (a long random string)}
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+
+  qdrant:
+    restart: unless-stopped
+  postgres:
+    restart: unless-stopped
+  redis:
+    restart: unless-stopped
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    command: tunnel --no-autoupdate --url http://api:8000
+    depends_on:
+      api:
+        condition: service_healthy

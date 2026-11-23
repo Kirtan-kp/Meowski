@@ -3,6 +3,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     app_env: str = "development"
     log_level : str = "INFO"
+    proxy_secret : str = ""  # when set, requests must carry X-Proxy-Secret (see app/middleware/proxy_guard.py)
 
     llm_provider :str = "groq"
     llm_api_key : str = ""

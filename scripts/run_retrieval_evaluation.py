@@ -3,6 +3,7 @@ from app.vectorstore.qdrant_store import QdrantVectorStore
 from app.retrieval.pipeline import create_retrieval_pipeline
 from app.llm.providers.groq import GroqLLM
 from app.evaluation.dataset import load_evaluation_dataset
+from app.services.bm25_index_service import BM25IndexService
 
 from app.evaluation.retrieval_metrics import (
     calculate_recall,
@@ -39,7 +40,8 @@ user_filter = Filter(
 
 llm = GroqLLM()
 
-retriever = create_retrieval_pipeline(vector_store = vector_store , llm = llm.llm , k = 10 , top_n = 3 , search_type = "mmr" , filter = user_filter)
+# Same configuration as the live API (hybrid dense + BM25 with RRF, then reranking).
+retriever = create_retrieval_pipeline(vector_store = vector_store , llm = llm.llm , k = 10 , top_n = 3 , search_type = "mmr" , filter = user_filter , bm25_index_service = BM25IndexService())
 
 def get_chunk_index(document):
     return document.metadata.get("chunk_index")
@@ -110,6 +112,9 @@ def evaluate_retrieval(k):
         print(f"Expected chunks: {relevant}")
 
         print("Retrieved chunks:" , [get_chunk_index(document) for document in documents])
+        for document in documents:
+            snippet = " ".join(document.page_content.split())[:90]
+            print(f"    [{get_chunk_index(document)}] {snippet}")
 
         print(f"Recall@{k} : {recall:.2f}")
         print(f"Precision@{k} : {precision:.2f}")

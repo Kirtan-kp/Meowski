@@ -1,112 +1,238 @@
 {
-  "version": "1.2",
+  "version": "2.1",
   "name": "meowski-portfolio-rag",
-  "description": "Evaluation dataset for Meowski portfolio RAG",
+  "description": "Evaluation dataset for Meowski portfolio RAG. Each case lists 'evidence' phrases that must appear in chunks that answer the question (the answer can live in both a body section and the FAQ). Run scripts/rebuild_eval_dataset.py to fill relevant_chunk_indices from the stored chunks.",
   "cases": [
     {
       "id": "portfolio_001",
-      "question": "What projects does Kirtan consider particularly representative of his technical interests?",
-      "relevant_chunk_indices": [50, 51],
-      "reference_answer": "Kirtan considers Cat RAG and the Vehicle Performance & Analytics MLOps Pipeline particularly representative of his technical interests. Cat RAG represents his interest in modern AI systems, information retrieval, LLM applications, and external knowledge, while the Vehicle Performance & Analytics project represents his interest in ML engineering, cloud infrastructure, deployment, CI/CD, model management, and production workflows.",
-      "expected_citations": [50,51]
+      "question": "What projects does Kirtan consider most representative of his technical interests?",
+      "evidence": [
+        "The projects I currently consider most representative of my technical interests"
+      ],
+      "relevant_chunk_indices": [],
+      "reference_answer": "Kirtan considers Meowski (Cat RAG), Kartly and the Vehicle Performance & Analytics MLOps Pipeline most representative of his technical interests, along with the AI Cafe website.",
+      "expected_citations": []
     },
     {
       "id": "portfolio_002",
       "question": "What technologies has Kirtan worked with?",
-      "relevant_chunk_indices": [19, 47],
-      "reference_answer": "Kirtan has worked with Python, Machine Learning, Deep Learning, Computer Vision, Data Structures and Algorithms, RAG, MLOps, FastAPI, Git, GitHub, GitHub Actions, Docker, MongoDB, and AWS. His Vehicle Performance & Analytics project also uses Conda, MongoDB Atlas, AWS S3, AWS EC2, AWS ECR, AWS IAM, Flask/FastAPI, HTML/CSS, Linux, and Windows PowerShell.",
-      "expected_citations": [19,47]
+      "evidence": [
+        "My technical areas include:",
+        "- Additional technologies: FastAPI, Git, GitHub, GitHub Actions, Docker, MongoDB, and AWS"
+      ],
+      "relevant_chunk_indices": [],
+      "reference_answer": "Kirtan works with Python, Machine Learning, Deep Learning, Computer Vision, Data Structures and Algorithms, RAG, agentic AI systems, MLOps, FastAPI, PostgreSQL, React and TypeScript, Git, GitHub, GitHub Actions, Docker, MongoDB and AWS.",
+      "expected_citations": []
     },
     {
       "id": "portfolio_003",
       "question": "What is Cat RAG?",
-      "relevant_chunk_indices": [61, 62],
-      "reference_answer": "Cat RAG is Kirtan's Retrieval-Augmented Generation project. It explores a modern RAG architecture involving dense retrieval, BM25, Reciprocal Rank Fusion, cross-encoder reranking, query rewriting, metadata filtering, context assembly, citations, and evaluation.",
-      "expected_citations": [61,62]
+      "evidence": [
+        "## What is Cat RAG? What is Meowski?"
+      ],
+      "relevant_chunk_indices": [],
+      "reference_answer": "Cat RAG, whose repository is named Meowski, is Kirtan's Retrieval-Augmented Generation project: a secure multi-tenant RAG backend with dense retrieval, BM25, Reciprocal Rank Fusion, cross-encoder reranking, query rewriting, metadata filtering, citations and evaluation. It powers Mochi's chat.",
+      "expected_citations": []
     },
     {
       "id": "portfolio_004",
       "question": "Why did Kirtan build Cat RAG?",
-      "relevant_chunk_indices": [22, 63],
-      "reference_answer": "Kirtan built Cat RAG to understand RAG as a complete engineering system rather than simply connecting a vector database to an LLM. The project allows him to explore retrieval quality, reranking, query processing, context construction, citations, and evaluation.",
-      "expected_citations": [22,63]
+      "evidence": [
+        "I wanted to understand RAG as an actual engineering system",
+        "Kirtan wanted to understand RAG as a complete engineering system"
+      ],
+      "relevant_chunk_indices": [],
+      "reference_answer": "Kirtan wanted to understand RAG as a complete engineering system rather than just an API call to an LLM, and to explore retrieval quality, reranking, query processing, citations and evaluation.",
+      "expected_citations": []
     },
     {
       "id": "portfolio_005",
       "question": "How does the retrieval architecture in Cat RAG work?",
-      "relevant_chunk_indices": [24, 25, 26],
-      "reference_answer": "Cat RAG uses a hybrid retrieval architecture combining dense retrieval and BM25 lexical retrieval. Their results are combined using Reciprocal Rank Fusion, after which a cross-encoder reranker examines the candidate documents and reorders them. The resulting documents are assembled into context for LLM generation.",
-      "expected_citations": [24,25,26]
+      "evidence": [
+        "The retrieval architecture uses a hybrid approach combining dense retrieval and lexical retrieval",
+        "It explores a modern RAG architecture involving dense retrieval, BM25"
+      ],
+      "relevant_chunk_indices": [],
+      "reference_answer": "It combines dense embedding retrieval with BM25 lexical retrieval, merges the results with Reciprocal Rank Fusion, reranks candidates with a cross-encoder, assembles the context and generates an answer with citations.",
+      "expected_citations": []
     },
     {
       "id": "portfolio_006",
       "question": "What retrieval techniques does Cat RAG use?",
-      "relevant_chunk_indices": [32],
-      "reference_answer": "Cat RAG uses dense retrieval, BM25, hybrid search, Reciprocal Rank Fusion, cross-encoder reranking, query rewriting, metadata filtering, session-aware retrieval, context assembly, citations, and retrieval evaluation.",
-      "expected_citations": [32]
+      "evidence": [
+        "BM25 provides lexical retrieval",
+        "It explores a modern RAG architecture involving dense retrieval, BM25"
+      ],
+      "relevant_chunk_indices": [],
+      "reference_answer": "Dense retrieval, BM25 lexical retrieval, Reciprocal Rank Fusion and cross-encoder reranking.",
+      "expected_citations": []
     },
     {
       "id": "portfolio_007",
       "question": "How does Cat RAG handle query processing?",
-      "relevant_chunk_indices": [27, 28],
-      "reference_answer": "Cat RAG can perform query rewriting and multi-query retrieval when reformulation can improve retrieval. Reformulation is not intended to be applied automatically to every query; the system treats query processing as part of retrieval and considers whether changing the query would improve retrieval.",
-      "expected_citations": [27,28]
+      "evidence": [
+        "The system can perform query rewriting and multi-query retrieval"
+      ],
+      "relevant_chunk_indices": [],
+      "reference_answer": "It can rewrite queries and perform multi-query retrieval, but only when reformulation can improve retrieval, so clear queries are not changed unnecessarily.",
+      "expected_citations": []
     },
     {
       "id": "portfolio_008",
       "question": "Why are metadata and session-aware filtering important in Cat RAG?",
-      "relevant_chunk_indices": [28, 29],
-      "reference_answer": "Metadata filtering can restrict retrieval based on document properties, while session information helps maintain appropriate context across interactions. The goal is to retrieve documents that are both relevant and valid for the current context rather than simply retrieving semantically similar documents.",
-      "expected_citations": [28,29]
+      "evidence": [
+        "The project also considers metadata-based filtering and session-aware retrieval"
+      ],
+      "relevant_chunk_indices": [],
+      "reference_answer": "Metadata filtering and session-aware retrieval make sure the system retrieves documents that are relevant and valid for the current context, not just semantically similar ones.",
+      "expected_citations": []
     },
     {
       "id": "portfolio_009",
-      "question": "What is the Vehicle Performance & Analytics project?",
-      "relevant_chunk_indices": [33, 64],
-      "reference_answer": "Vehicle Performance & Analytics is an end-to-end MLOps pipeline designed to automate the machine learning lifecycle from data ingestion through model training, evaluation, model registration, and production deployment.",
-      "expected_citations": [33,64]
+      "question": "How does Meowski keep visitors' uploaded files safe?",
+      "evidence": [
+        "Security is part of the design: retrieved documents are treated as untrusted data",
+        "files that a visitor uploads are temporary and private to that visitor's session"
+      ],
+      "relevant_chunk_indices": [],
+      "reference_answer": "Retrieved text is treated as untrusted to resist prompt injection, uploads have size, page and parser-time limits, retrieval is filtered by session so one visitor never sees another's files, and credentials stay on the server.",
+      "expected_citations": []
     },
     {
       "id": "portfolio_010",
-      "question": "What is the architecture of the Vehicle Performance & Analytics MLOps pipeline?",
-      "relevant_chunk_indices": [36],
-      "reference_answer": "The pipeline flows from MongoDB Atlas through data ingestion, data validation, data transformation, model training, model evaluation, model pushing, an AWS S3 model registry, a Dockerized production application, and AWS EC2.",
-      "expected_citations": [36]
+      "question": "What is Meowski built with?",
+      "evidence": [
+        "It is built with Python, FastAPI, LangGraph, Qdrant, PostgreSQL, Redis and Docker Compose"
+      ],
+      "relevant_chunk_indices": [],
+      "reference_answer": "Meowski is built with Python, FastAPI, LangGraph, Qdrant, PostgreSQL, Redis and Docker Compose, using Groq as the LLM provider with Ollama support.",
+      "expected_citations": []
     },
     {
       "id": "portfolio_011",
-      "question": "What AWS services are used in the Vehicle Performance & Analytics project?",
-      "relevant_chunk_indices": [41, 42, 47],
-      "reference_answer": "The project uses AWS S3 for model artifacts and the production model registry, AWS EC2 as the production compute environment, AWS ECR as the container registry, and AWS IAM for managing access to AWS resources.",
-      "expected_citations": [41,42,47]
+      "question": "What is Kartly?",
+      "evidence": [
+        "Kartly is Kirtan's agentic AI support system for e-commerce. It triages tickets"
+      ],
+      "relevant_chunk_indices": [],
+      "reference_answer": "Kartly is Kirtan's agentic AI customer-support system for e-commerce. It triages tickets, retrieves policy, calls tools through a Tool Gateway that enforces policy in code, resolves low-risk issues itself and escalates the rest to a human.",
+      "expected_citations": []
     },
     {
       "id": "portfolio_012",
-      "question": "How does model evaluation work in the Vehicle Performance & Analytics pipeline?",
-      "relevant_chunk_indices": [39, 40],
-      "reference_answer": "The evaluation stage compares a newly trained model against an existing production baseline stored in AWS S3. A predefined improvement threshold is used as a gate, and the project requires a minimum performance improvement of 0.02 before a newly trained model is pushed as an updated production model.",
-      "expected_citations": [39,40]
+      "question": "How does Kartly stop the AI from making unsafe refunds?",
+      "evidence": [
+        "a Tool Gateway decides whether they run",
+        "Tool Gateway that enforces policy in code (refund caps, approvals and an audit log)"
+      ],
+      "relevant_chunk_indices": [],
+      "reference_answer": "The model only proposes tool calls and a Tool Gateway decides whether they run. The gateway enforces policy in code with refund caps, approvals bound to the exact action and an append-only audit log; large refunds wait for a human reviewer.",
+      "expected_citations": []
     },
     {
       "id": "portfolio_013",
-      "question": "How is CI/CD implemented in the Vehicle Performance & Analytics project?",
-      "relevant_chunk_indices": [43, 44],
-      "reference_answer": "GitHub Actions is used to automate the continuous integration and continuous deployment workflow. The project uses a self-hosted GitHub Actions runner running on AWS infrastructure, which can build the Docker image and deliver the updated application when changes are pushed to the repository.",
-      "expected_citations": [43,44]
+      "question": "How safe did Kartly's red-team testing turn out?",
+      "evidence": [
+        "A write-path and red-team run of 15 cases"
+      ],
+      "relevant_chunk_indices": [],
+      "reference_answer": "A write-path and red-team run of 15 cases against a hosted model had 0 safety failures, including fake manager approvals and split refunds, though each case was run once on synthetic data.",
+      "expected_citations": []
     },
     {
       "id": "portfolio_014",
-      "question": "What does Kirtan enjoy outside technology?",
-      "relevant_chunk_indices": [12, 13, 14, 66],
-      "reference_answer": "Kirtan enjoys listening to music, gaming, playing football, staying physically active, and food. He particularly enjoys emotional and atmospheric music, artists such as Arijit Singh, and story-driven games including Sekiro, Elden Ring, Control, Rise of the Ronin, and Raft.",
-      "expected_citations": [12,13,14,66]
+      "question": "What are Kartly's limitations?",
+      "evidence": [
+        "Kirtan is open about the limits",
+        "Each case was run once and the data is synthetic"
+      ],
+      "relevant_chunk_indices": [],
+      "reference_answer": "Each case was run once, reply quality is graded by phrase matching and a grounding check rather than a strong LLM judge, free-tier models are small, the deployment is single-machine with one shared API key, and all data is synthetic.",
+      "expected_citations": []
     },
     {
       "id": "portfolio_015",
+      "question": "What is the Vehicle Performance & Analytics project?",
+      "evidence": [
+        "Vehicle Performance & Analytics is an end-to-end MLOps project designed to automate",
+        "It is an end-to-end MLOps pipeline designed to automate the machine learning lifecycle from data ingestion through model training"
+      ],
+      "relevant_chunk_indices": [],
+      "reference_answer": "It is an end-to-end MLOps project that automates the machine learning lifecycle from data ingestion to model deployment, using MongoDB Atlas, AWS, Docker, GitHub Actions and a modular Python architecture.",
+      "expected_citations": []
+    },
+    {
+      "id": "portfolio_016",
+      "question": "What is the architecture of the Vehicle Performance & Analytics MLOps pipeline?",
+      "evidence": [
+        "The pipeline is divided into several independent components"
+      ],
+      "relevant_chunk_indices": [],
+      "reference_answer": "The pipeline runs data ingestion from MongoDB Atlas, data validation, data transformation, model training, model evaluation and model pushing to an AWS S3 model registry, then a Dockerized application on AWS EC2.",
+      "expected_citations": []
+    },
+    {
+      "id": "portfolio_017",
+      "question": "What AWS services are used in the Vehicle Performance & Analytics project?",
+      "evidence": [
+        "The project uses several AWS services for different parts of the infrastructure",
+        "The project uses Python, MongoDB Atlas, AWS S3, AWS EC2, AWS ECR, AWS IAM, Docker, GitHub Actions, and Flask/FastAPI."
+      ],
+      "relevant_chunk_indices": [],
+      "reference_answer": "S3 for model artifacts and the model registry, EC2 as the production compute environment, ECR as the container registry and IAM for access management.",
+      "expected_citations": []
+    },
+    {
+      "id": "portfolio_018",
+      "question": "How does model evaluation work in the Vehicle Performance & Analytics pipeline?",
+      "evidence": [
+        "The evaluation stage compares the newly trained model against an existing production baseline"
+      ],
+      "relevant_chunk_indices": [],
+      "reference_answer": "The newly trained model is compared with the production model stored in AWS S3 using the F1 score on the test set, and it is accepted only if it scores higher.",
+      "expected_citations": []
+    },
+    {
+      "id": "portfolio_019",
+      "question": "How is CI/CD implemented in the Vehicle Performance & Analytics project?",
+      "evidence": [
+        "GitHub Actions is used to automate the continuous integration and continuous deployment workflow."
+      ],
+      "relevant_chunk_indices": [],
+      "reference_answer": "GitHub Actions with a self-hosted runner on AWS builds the Docker image and delivers the updated application when changes are pushed.",
+      "expected_citations": []
+    },
+    {
+      "id": "portfolio_020",
+      "question": "What is the AI Cafe website?",
+      "evidence": [
+        "is the game-like portfolio website that this assistant lives in"
+      ],
+      "relevant_chunk_indices": [],
+      "reference_answer": "AI Cafe is Kirtan's game-like pixel-art portfolio website, built with React and TypeScript, with a cat companion named Mochi whose chat is powered by Meowski.",
+      "expected_citations": []
+    },
+    {
+      "id": "portfolio_021",
+      "question": "What does Kirtan enjoy outside technology?",
+      "evidence": [
+        "I enjoy listening to music.",
+        "Kirtan enjoys listening to music, playing games, playing football"
+      ],
+      "relevant_chunk_indices": [],
+      "reference_answer": "Kirtan enjoys music, gaming especially story-driven games, football, physical activity and food.",
+      "expected_citations": []
+    },
+    {
+      "id": "portfolio_022",
       "question": "How does Kirtan approach learning?",
-      "relevant_chunk_indices": [15, 16, 17, 69],
-      "reference_answer": "Kirtan prefers learning through practical implementation. He likes taking concepts, building with them, seeing where they work and fail, understanding why something failed, debugging problems, and improving the solution rather than relying purely on theoretical study or tutorials.",
-      "expected_citations": [15,16,17,69]
+      "evidence": [
+        "I learn best when I can actually work with something rather than only study it theoretically.",
+        "Kirtan prefers learning through implementation"
+      ],
+      "relevant_chunk_indices": [],
+      "reference_answer": "Kirtan learns best by implementing things, seeing where they fail and understanding why, rather than only following tutorials.",
+      "expected_citations": []
     }
   ]
 }

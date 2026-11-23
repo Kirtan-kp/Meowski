@@ -4,6 +4,7 @@ from app.api.routes.upload import router as upload_router
 from app.core.logging import setup_logging
 from app.middleware.request_logging import request_logging_middleware
 from app.middleware.rate_limit import rate_limit_middleware
+from app.middleware.proxy_guard import proxy_guard_middleware
 from app.db.databse import init_db
 from app.api.routes.session import router as session_router
 import asyncio
@@ -43,6 +44,7 @@ init_db()
 # first so request logging/metrics also see the 429 responses it produces.
 app.middleware("http")(rate_limit_middleware)
 app.middleware("http")(request_logging_middleware)
+app.middleware("http")(proxy_guard_middleware)  # outermost: checks the secret and sets the real client IP first
 
 API_PREFIX = "/api/v1"
 

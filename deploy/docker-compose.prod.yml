@@ -1,0 +1,38 @@
+# Production overlay for a single VM. Use together with the main file:
+#   docker compose -f docker-compose.yml -f deploy/docker-compose.prod.yml --env-file .env up -d --build
+# Needs Docker Compose v2.24+ (the "!reset" tag). The API is no longer published on the host: only Caddy (80/443) is.
+services:
+  api:
+    ports: !reset []
+    restart: unless-stopped
+    # Trust the X-Forwarded-For that Caddy sets (the real visitor IP), so per-IP rate limits work.
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers", "--forwarded-allow-ips=*"]
+
+  qdrant:
+    restart: unless-stopped
+  postgres:
+    restart: unless-stopped
+  redis:
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      DOMAIN: ${DOMAIN:?set DOMAIN in .env, e.g. mychat.duckdns.org}
+      PROXY_SECRET: ${PROXY_SECRET:?set PROXY_SECRET in .env}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      api:
+        condition: service_healthy
+
+volumes:
+  caddy_data:
+  caddy_config:

@@ -72,8 +72,11 @@ My technical areas include:
 - Computer Vision
 - Data Structures and Algorithms
 - Retrieval-Augmented Generation (RAG)
+- Agentic AI systems
 - MLOps
 - FastAPI
+- PostgreSQL
+- React and TypeScript (frontend)
 - Git
 - GitHub
 - GitHub Actions
@@ -81,7 +84,7 @@ My technical areas include:
 - MongoDB
 - AWS
 
-I have worked on projects involving MLOps and RAG, and I am interested in going beyond simply training models. I want to understand how AI systems can be turned into complete, usable applications involving APIs, retrieval systems, deployment, version control, CI/CD, and other engineering components.
+I have built projects involving RAG, agentic AI and MLOps, and I am interested in going beyond simply training models. I want to understand how AI systems can be turned into complete, usable applications involving APIs, retrieval systems, deployment, version control, CI/CD, and other engineering components.
 
 My current direction is increasingly focused on AI engineering: combining machine learning and AI knowledge with software engineering to build systems that people can actually use.
 
@@ -89,7 +92,7 @@ My current direction is increasingly focused on AI engineering: combining machin
 
 # Projects
 
-## 1. Cat RAG — Retrieval-Augmented Generation Application
+## 1. Meowski (Cat RAG) — Retrieval-Augmented Generation Application
 
 ### Overview
 
@@ -97,7 +100,15 @@ Cat RAG is a Retrieval-Augmented Generation application that I am building to ex
 
 The project is intended to demonstrate a more complete retrieval architecture involving multiple retrieval strategies, reranking, query processing, context assembly, filtering, citations, and evaluation.
 
-The name "Cat RAG" comes from the project's cat-themed identity, but technically the project is focused on building a robust and modular RAG system.
+The name "Cat RAG" comes from the project's cat-themed identity, but technically the project is focused on building a robust and modular RAG system. The GitHub repository is called Meowski (github.com/Kirtan-kp/Meowski), so Meowski and Cat RAG are the same project.
+
+Meowski is a secure, multi-tenant RAG backend. Portfolio knowledge is permanent, while files that a visitor uploads are temporary and private to that visitor's session. Uploaded files are validated, size-limited, hashed so the same file is only ingested once, parsed, chunked, embedded locally and stored in Qdrant, with metadata in PostgreSQL. Sessions are cleaned up automatically after a time limit.
+
+It is built with Python, FastAPI, LangGraph, Qdrant, PostgreSQL, Redis and Docker Compose, and it uses Groq as the LLM provider behind a provider abstraction that also supports a local Ollama model. The goal was a system that can run with zero mandatory spend, so it has daily, rolling and per-session token budgets, request limits, rate limiting, caching and circuit breakers built into the architecture.
+
+Security is part of the design: retrieved documents are treated as untrusted data to resist prompt injection, uploads have size, page and parser-time limits, retrieval is filtered by session so one visitor can never see another visitor's files, and credentials stay on the server. The project includes an evaluation suite and a pytest suite covering retrieval, reranking, ingestion, upload security, sessions, caching, quotas, provider failures and API routes.
+
+Mochi, the cat in Kirtan's AI Café website, is powered by Meowski: visitors can ask Mochi questions about Kirtan's projects, ask general questions, and upload a file to ask about it.
 
 ### Why I Built It
 
@@ -196,7 +207,45 @@ The project has also changed the way I think about AI applications. I increasing
 
 ---
 
-# 2. Vehicle Performance & Analytics — MLOps Pipeline
+# 2. Kartly — Agentic AI Support System for E-commerce
+
+## Overview
+
+Kartly is an agentic AI customer-support system for e-commerce (github.com/Kirtan-kp/Kartly). It triages support tickets, retrieves store policy, calls tools through a deterministic gateway, resolves low-risk issues by itself, and hands other cases to a human reviewer with a summary. It was built to show the engineering around the model rather than just a clever prompt. All data is synthetic and the models are free or local, so it has no real customers or payments.
+
+## Why I Built It
+
+An AI agent that can issue refunds is only useful if it cannot be talked into mistakes. I wanted to explore guardrails, approvals, audit trails and honest evaluation for agents.
+
+## How It Works
+
+Every ticket first passes an injection screen and keyword rules that send legal, injury and distress tickets straight to humans. Then a bounded agent loop runs. The model only proposes tool calls, and a Tool Gateway decides whether they run. The gateway enforces policy in code: it injects the customer ID itself, caps refunds, binds approvals to the exact action and writes an append-only audit log. Refunds under INR 1,000 can run automatically, while larger refunds, or refunds beyond a daily cap, wait for a reviewer. Write actions can run in off, shadow (recorded as a pending approval) or auto mode.
+
+Replies are checked for grounding: citations and numbers are verified against the retrieved policy, with an optional claim judge. Retrieval uses BM25, dense and hybrid search over a synthetic policy knowledge base.
+
+## Reliability and Operations
+
+Kartly has a Postgres job queue with retries and dead letters, a model fallback chain with circuit breakers, a kill switch, a fault-injection tool and replay of stored runs. It also has metrics, alerts, cost reports, reviewer accounts, an admin page, Docker deployment and a deployment guide covering https, backups and rollback.
+
+## Technologies
+
+Python 3.11, FastAPI, PostgreSQL with pgvector, Redis (planned), Docker, GitHub Actions, Alembic, Ollama for local models, and hosted free-tier LLM APIs such as Groq behind one OpenAI-compatible client. The admin UI is plain static files with no build step.
+
+## Evaluation and Results
+
+There are 43 golden evaluation cases graded mainly on the final store state rather than on how the reply sounds, plus routing, retrieval and claim-judge evaluations. A write-path and red-team run of 15 cases against a hosted model had 0 safety failures, including fake manager approvals and split refunds. Dense retrieval ranked the correct policy chunk first for 93.5% of 74 questions, though Kirtan notes that this question set is easy. One run costs about 3,000 tokens (roughly $0.0003) with a median latency of around 2 seconds.
+
+## Known Limits
+
+Kirtan is open about the limits: each case was run once, so a pass is not a pass rate; reply quality is graded by phrase matching and a grounding check rather than a strong LLM judge; free-tier models are small; the deployment is single-machine with one shared API key; and all data is synthetic.
+
+## What I Learned
+
+Safety for agents comes from the system around the model: code-enforced policy, approvals, audit logs, risk tiers and honest evaluation, including being clear about what the numbers do not prove.
+
+---
+
+# 3. Vehicle Performance & Analytics — MLOps Pipeline
 
 ## Overview
 
@@ -264,7 +313,7 @@ The transformation component produces processed data artifacts that can be consu
 
 ### Model Training
 
-The model trainer is responsible for training machine learning models using the transformed dataset.
+The model trainer is responsible for training the machine learning model using the transformed dataset. The model is a scikit-learn RandomForestClassifier, and it is scored on a held-out test set with F1 score, precision and recall.
 
 The trained estimators are then stored as artifacts for subsequent evaluation.
 
@@ -274,7 +323,7 @@ One of the important aspects of the project is that a newly trained model is not
 
 The evaluation stage compares the newly trained model against an existing production baseline stored in AWS S3.
 
-A predefined improvement threshold is used as a gate. The project uses a minimum performance improvement threshold of 0.02 before a newly trained model is pushed as an updated production model.
+The comparison uses the F1 score on the test set. A newly trained model is accepted only if its F1 score is higher than the production model's F1 score. If there is no production model yet, the first trained model is accepted.
 
 This creates a basic form of automated model gatekeeping rather than deploying every newly trained model automatically.
 
@@ -401,21 +450,39 @@ Rather than treating a trained model as the final product, I learned to think ab
 
 ---
 
+# 4. AI Café — This Interactive Portfolio Website
+
+## Overview
+
+AI Café is the game-like portfolio website that this assistant lives in. Visitors explore a pixel-art café with an interior and an exterior, a menu tablet where each dish is one of Kirtan's projects, a signpost and a notice board outside, and Mochi, a cat companion who can chat.
+
+## How It Is Built
+
+The frontend uses React, TypeScript, Vite, Tailwind CSS and Framer Motion. All of the art is drawn in code on a small 320x180 pixel canvas that is scaled up crisply, with continuous day and night lighting and a weather system, so there are no image files to keep consistent. Sound effects are generated procedurally with the Web Audio API. Mochi is a pixel sprite with idle, walking, sitting, sleeping and cheering behaviors.
+
+Mochi's chat is connected to the Meowski backend (Cat RAG). Visitors can ask about Kirtan's projects, ask general questions, upload a PDF, DOCX or TXT file and ask about it, and see which source an answer came from and a usage meter. The website is hosted for free on Cloudflare Pages, and a small proxy function forwards chat requests to the backend with a secret so that only the website can use it.
+
+## Why I Built It
+
+Most portfolios are static pages that are easy to forget. Kirtan wanted a portfolio that feels like a place to explore and that can answer questions instead of only listing them. Because he is not an artist, he chose to draw everything in code on a small pixel canvas, which keeps the style consistent.
+
+---
+
 # How I Think About Technology
 
 I don't want technology to be something I only study for examinations or certifications. I want to be able to build things with it.
 
 For me, there is a significant difference between saying that I know a technology and actually being able to use it to solve a problem. Because of this, I am interested in projects that force me to connect different pieces together.
 
-The two projects I currently consider particularly representative of my technical interests are Cat RAG and the Vehicle Performance & Analytics MLOps Pipeline.
+The projects I currently consider most representative of my technical interests are Meowski (Cat RAG), Kartly and the Vehicle Performance & Analytics MLOps Pipeline, along with this AI Café website.
 
-They represent two sides of the direction I am interested in pursuing.
+They represent the direction I am interested in pursuing.
 
-Cat RAG represents my interest in modern AI systems, information retrieval, LLM applications, and building intelligent systems that can work with external knowledge.
+Cat RAG (Meowski) represents my interest in modern AI systems, information retrieval, LLM applications, and building intelligent systems that can work with external knowledge. Kartly represents my interest in agentic AI that is safe to deploy: guardrails, approvals, audit trails and honest evaluation.
 
 The Vehicle Performance & Analytics project represents my interest in the engineering side of machine learning, including pipelines, cloud infrastructure, deployment, CI/CD, model management, and production workflows.
 
-Together, they reflect my broader goal of becoming capable of building AI systems that are not just models, but complete applications.
+The AI Café shows that I also care about the product and frontend side of AI applications. Together, they reflect my broader goal of becoming capable of building AI systems that are not just models, but complete applications.
 
 ---
 
@@ -461,8 +528,10 @@ I don't think life needs to be about becoming the richest or most successful per
 - Primary programming language: Python
 - Technical focus: AI, Machine Learning, Deep Learning, Computer Vision, RAG, and MLOps
 - Additional technologies: FastAPI, Git, GitHub, GitHub Actions, Docker, MongoDB, and AWS
-- Current AI project: Cat RAG
+- AI projects: Meowski (Cat RAG), a secure multi-tenant RAG assistant, and Kartly, an agentic AI support system for e-commerce
 - MLOps project: Vehicle Performance & Analytics MLOps Pipeline
+- Portfolio website: AI Café, a pixel-art café with a chat cat named Mochi
+- GitHub: github.com/Kirtan-kp (repositories: Meowski, Kartly, MLOPS_VEHICLE_INSURANCE)
 - Enjoys: Music, gaming, football, physical activity, and food
 - Prefers: Understanding concepts through logic and practical implementation
 - Values: Kindness, humility, empathy, continuous improvement, independence, and open-mindedness
@@ -484,13 +553,33 @@ Kirtan primarily uses Python.
 
 His main technical interests include Machine Learning, Deep Learning, Computer Vision, Retrieval-Augmented Generation, AI engineering, MLOps, deployment, and cloud infrastructure.
 
-## What is Cat RAG?
+## What is Cat RAG? What is Meowski?
 
-Cat RAG is Kirtan's Retrieval-Augmented Generation project. It explores a modern RAG architecture involving dense retrieval, BM25, Reciprocal Rank Fusion, cross-encoder reranking, query rewriting, metadata filtering, context assembly, citations, and evaluation.
+Cat RAG, whose GitHub repository is named Meowski, is Kirtan's Retrieval-Augmented Generation project. It is a secure multi-tenant RAG backend, and it is what powers Mochi's chat on this website. It explores a modern RAG architecture involving dense retrieval, BM25, Reciprocal Rank Fusion, cross-encoder reranking, query rewriting, metadata filtering, context assembly, citations, and evaluation.
 
 ## Why did Kirtan build Cat RAG?
 
 Kirtan wanted to understand RAG as a complete engineering system rather than simply connecting a vector database to an LLM. The project allows him to explore retrieval quality, reranking, query processing, context construction, citations, and evaluation.
+
+## What is Kartly?
+
+Kartly is Kirtan's agentic AI support system for e-commerce. It triages tickets, retrieves policy, and calls tools through a Tool Gateway that enforces policy in code (refund caps, approvals and an audit log). It resolves low-risk issues itself and escalates the rest to a human. It uses synthetic data and free or local models. Its repository is github.com/Kirtan-kp/Kartly.
+
+## How well does Kartly perform?
+
+A write-path and red-team run of 15 cases against a hosted model had 0 safety failures. Dense retrieval ranked the correct policy chunk first for 93.5% of 74 questions, on an easy question set. Each case was run once and the data is synthetic, so Kirtan treats these as encouraging results and not as proof.
+
+## What is the AI Café?
+
+AI Café is this interactive pixel-art portfolio website. Its art is drawn in code, it has day and night lighting and weather, and Mochi the cat answers questions through the Meowski RAG backend. It is built with React, TypeScript, Vite, Tailwind CSS and Framer Motion, and hosted on Cloudflare Pages.
+
+## Who is Mochi?
+
+Mochi is the cat companion in the AI Café. She reacts to what visitors do, and she can chat: visitors can ask about Kirtan's projects, ask general questions, and upload a file to ask about it.
+
+## What are Kirtan's main projects?
+
+Meowski (Cat RAG), a secure multi-tenant RAG assistant; Kartly, an agentic AI support system for e-commerce; the Vehicle Performance & Analytics MLOps pipeline; and the AI Café website. Their code is on GitHub at github.com/Kirtan-kp.
 
 ## What is the Vehicle Performance & Analytics project?
 

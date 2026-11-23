@@ -18,7 +18,7 @@ async def rate_limit_middleware(request: Request, call_next):
     if path.endswith("/health"):
         return await call_next(request)
 
-    client_ip = request.client.host if request.client else "unknown"
+    client_ip = getattr(request.state, "client_ip", None) or (request.client.host if request.client else "unknown")
     content_length = request.headers.get("content-length")
     if content_length:
         try:

@@ -1,0 +1,21 @@
+# HTTPS reverse proxy. Caddy gets and renews a free Let's Encrypt certificate for {$DOMAIN} by itself
+# (needs ports 80 and 443 reachable and the DuckDNS name pointing at this VM).
+{$DOMAIN} {
+	encode zstd gzip
+
+	# Only the website's proxy knows this secret, so strangers cannot call the API directly and spend your tokens.
+	@no_secret {
+		not header X-Proxy-Secret {$PROXY_SECRET}
+	}
+	respond @no_secret "Forbidden" 403
+
+	request_body {
+		max_size 13MB
+	}
+
+	reverse_proxy api:8000 {
+		# The website's proxy puts the real visitor IP in X-Visitor-IP; hand it to the API as X-Forwarded-For.
+		header_up X-Forwarded-For {http.request.header.X-Visitor-IP}
+		# X-Visitor-IP and X-Proxy-Secret are passed on: the API checks them too (app/middleware/proxy_guard.py).
+	}
+}
